@@ -1,0 +1,19 @@
+{
+  "name": "咖啡店 SOP",
+  "short_name": "咖啡SOP",
+  "description": "咖啡店 SOP 手机查阅站点，支持搜索、打印、备份与本机编辑。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f5f0",
+  "theme_color": "#2C5F2E",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
