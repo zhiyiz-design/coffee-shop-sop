@@ -1,6 +1,7 @@
 const STORE = 'coffee_sop_v2';
 const CLOUD_HASH_KEY = 'coffee_sop_v2_cloud_hash';
 const PUBLISHED_LABEL = '2026.04.29 发布版';
+const ASSET_VERSION = '20260429b';
 const FIREBASE_SDK_VERSION = '12.7.0';
 const IMAGE_MAX_DATA_URL_LENGTH = 460000;
 const IMAGE_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -892,7 +893,7 @@ function showToast(message){
 function registerServiceWorker(){
   if(!('serviceWorker' in navigator))return;
   window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register(`./sw.js?v=${ASSET_VERSION}`, {updateViaCache:'none'}).catch(()=>{});
   });
 }
 

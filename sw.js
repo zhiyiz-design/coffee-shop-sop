@@ -1,10 +1,10 @@
-const CACHE_NAME = 'coffee-sop-static-v2';
+const CACHE_NAME = 'coffee-sop-static-v3';
 const APP_SHELL = [
   './',
   './index.html',
-  './app.js',
-  './firebase-config.js',
-  './manifest.webmanifest',
+  './app.js?v=20260429b',
+  './firebase-config.js?v=20260429b',
+  './manifest.webmanifest?v=20260429b',
   './icon.svg',
 ];
 
