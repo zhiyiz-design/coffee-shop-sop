@@ -1,5 +1,12 @@
-const CACHE_NAME = 'coffee-sop-static-v1';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const CACHE_NAME = 'coffee-sop-static-v2';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './app.js',
+  './firebase-config.js',
+  './manifest.webmanifest',
+  './icon.svg',
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -17,6 +24,22 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  const isSameOrigin = url.origin === self.location.origin;
+
+  if (isSameOrigin) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;

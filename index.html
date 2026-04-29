@@ -80,6 +80,8 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);
   background:var(--brew-light);color:var(--brew);border-radius:100px;
   padding:4px 10px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0
 }
+.status-chip.sync{background:#edf5ff;color:#24558a}
+.status-chip.warn{background:#fff1e4;color:#9a5d12}
 .status-copy{display:flex;flex-direction:column;gap:4px}
 .status-title{font-size:13px;font-weight:600;color:var(--text)}
 .status-text{font-size:12px;line-height:1.5;color:var(--text-mid)}
@@ -92,6 +94,7 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);
   -webkit-tap-highlight-color:transparent
 }
 .status-btn:active,.status-file:active{background:#f8f8f8}
+.status-btn.primary{background:var(--brew);border-color:var(--brew);color:#fff}
 .status-btn.warn{border-color:#e4c89c;color:#8a5a14;background:#fffaf1}
 .status-btn[disabled]{opacity:.45;cursor:not-allowed}
 .status-file input{display:none}
@@ -271,32 +274,41 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);
 }
 .print-btn:active{opacity:.8}
 .print-preview{
-  background:#fff;border:1px solid var(--border);border-radius:var(--radius);
-  padding:20px;font-size:13px;line-height:1.8
+  background:#fff;border:1px solid #e9dfd1;border-radius:18px;
+  padding:18px 18px 12px;font-size:14px;line-height:1.62
 }
-.print-drink-block{margin-bottom:24px;border-bottom:1px solid #eee;padding-bottom:20px}
-.print-drink-block:last-child{border-bottom:none;margin-bottom:0}
+.print-preview .cover{padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid #edf1ea}
+.print-preview .cover h1{font-family:var(--serif);font-size:24px;color:#264e28;line-height:1.25}
+.print-preview .cover .sub{margin-top:4px;font-size:11px;color:#66706a}
+.print-drink-block{
+  margin-bottom:12px;border:1px solid #e9dfd1;border-radius:16px;
+  padding:14px 14px 12px;background:#fff
+}
+.print-drink-block:last-child{margin-bottom:0}
 .print-drink-name{font-family:var(--serif);font-size:17px;font-weight:600;
-  color:var(--brew);margin-bottom:2px}
-.print-price{font-size:11px;color:var(--amber);margin-bottom:10px}
-.print-section{font-size:10px;font-weight:500;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--text-mute);margin:10px 0 5px}
-.print-ing-row{display:flex;gap:8px;font-size:12px;margin-bottom:3px}
+  color:#264e28;line-height:1.25}
+.print-price{
+  display:inline-flex;margin-top:6px;padding:2px 9px;border-radius:999px;
+  background:#fff6e9;color:#a66e1f;font-size:12px;font-weight:600
+}
+.print-section{font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:#69746e;margin:12px 0 6px}
+.print-ing-row{display:flex;gap:10px;font-size:13px;margin-bottom:4px}
 .print-ing-name{flex:1;color:var(--text-mid)}
-.print-ing-amt{color:var(--brew);font-weight:500}
-.print-step{display:flex;gap:8px;font-size:12px;margin-bottom:5px}
+.print-ing-amt{color:#264e28;font-weight:700;white-space:nowrap}
+.print-step{display:flex;gap:10px;font-size:13px;margin-bottom:6px}
 .print-step-n{
-  min-width:18px;height:18px;border-radius:50%;background:var(--brew);color:#fff;
-  font-size:9px;font-weight:500;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:2px
+  min-width:22px;height:22px;border-radius:50%;background:var(--brew);color:#fff;
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px
 }
 .print-note{
-  background:var(--amber-light);border-left:2px solid var(--amber);
-  padding:5px 8px;font-size:11px;color:#7a5c00;margin-top:4px;
-  border-radius:0 4px 4px 0
+  background:#fff5e8;border-left:3px solid var(--amber);
+  padding:8px 10px;font-size:12px;color:#7a5c00;margin-top:6px;
+  border-radius:0 8px 8px 0
 }
 .print-img{width:100%;max-height:140px;object-fit:cover;
-  border-radius:var(--radius-sm);margin-bottom:10px;border:1px solid var(--border)}
+  border-radius:10px;margin-top:12px;border:1px solid var(--border)}
 
 /* ── TOAST ── */
 .toast{
@@ -341,16 +353,18 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);
     <div class="status-meta">
       <span class="status-chip" id="statusChip">门店发布版</span>
       <div class="status-copy">
-        <div class="status-title">统一查看链接已就绪</div>
+        <div class="status-title" id="statusTitle">统一查看链接已就绪</div>
         <div class="status-text" id="statusText">当前显示门店发布版，所有手机都能通过同一个链接查看。</div>
       </div>
     </div>
     <div class="status-actions">
+      <button class="status-btn primary" id="cloudPrimaryBtn" type="button" onclick="handleCloudPrimaryAction()">上传到云端</button>
+      <button class="status-btn" id="cloudSecondaryBtn" type="button" onclick="handleCloudSecondaryAction()" hidden>改用云端版本</button>
       <button class="status-btn" type="button" onclick="exportData()">导出备份</button>
       <label class="status-file" for="importInput">导入备份
         <input id="importInput" type="file" accept="application/json" onchange="importData(event)">
       </label>
-      <button class="status-btn warn" id="resetBtn" type="button" onclick="resetPublishedData()">恢复发布版</button>
+      <button class="status-btn warn" id="resetBtn" type="button" onclick="resetPublishedData()">恢复模板版</button>
     </div>
   </section>
 
@@ -390,524 +404,7 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);
 <!-- PRINT IFRAME (hidden, used for printing) -->
 <iframe id="printFrame" style="display:none"></iframe>
 
-<script>
-// ═══════════════════════════════════════════════════════
-//  DATA & PERSISTENCE
-// ═══════════════════════════════════════════════════════
-const STORE = 'coffee_sop_v2';
-const PUBLISHED_LABEL = '2026.04 发布版';
-
-const DEFAULT = [
-  {id:1,emoji:'🧂',name:'海盐芝士月白',price:'¥43',img:'',
-   ingredients:[
-     {name:'Espresso 浓缩',amount:'标准份量'},
-     {name:'热水（65°C）',amount:'150g'},
-     {name:'焦糖海盐糖浆（咖啡底）',amount:'6g'},
-     {name:'Kiri 奶油芝士',amount:'35g'},
-     {name:'淡奶油',amount:'15g'},
-     {name:'焦糖海盐糖浆（奶盖）',amount:'6g'},
-     {name:'奥利奥饼干',amount:'少许'}
-   ],
-   steps:[
-     '浓缩倒入 150g 65°C 热水，加 6g 焦糖海盐糖浆搅匀（咖啡底）',
-     '35g Kiri + 15g 淡奶油 + 6g 糖浆 + 少许奥利奥一起打发（奶盖）',
-     '奶盖铺在咖啡液面上，顶部撒奥利奥碎装饰'
-   ],
-   notes:['不要打太久！过度打发会固化，影响口感']},
-  {id:2,emoji:'🍵',name:'抹茶拿铁',price:'¥39',img:'',
-   ingredients:[
-     {name:'抹茶粉',amount:'4g'},
-     {name:'蜂蜜',amount:'2.5g'},
-     {name:'热水（第一次）',amount:'10g'},
-     {name:'热水（第二次）',amount:'20g'},
-     {name:'牛奶 / 燕麦奶',amount:'按杯型'}
-   ],
-   steps:[
-     '抹茶粉 + 蜂蜜，第一次注水 10g，茶筅充分打成泥状（无颗粒）',
-     '第二次注水 20g，继续搅打至细腻均匀',
-     '打发奶泡，抹茶糊倒入杯中，缓缓注入奶泡'
-   ],
-   notes:['分两次加水：第一次少量打泥，第二次再加，避免结块']},
-  {id:3,emoji:'☕',name:'泡沫美式（芭乐/百香果/荔枝）',price:'¥31',img:'',
-   ingredients:[
-     {name:'Espresso 浓缩',amount:'标准份量'},
-     {name:'冰块',amount:'七分满'},
-     {name:'苏打水 / 气泡水',amount:'八分满'},
-     {name:'风味糖浆',amount:'15ml'}
-   ],
-   steps:[
-     '杯中加满冰块',
-     '注入苏打水至八分满，加入对应风味糖浆轻轻搅动',
-     '缓缓倒入 Espresso，形成分层效果即可'
-   ],
-   notes:[]},
-  {id:4,emoji:'🌿',name:'抹茶椰子糖',price:'¥39',img:'',
-   ingredients:[
-     {name:'抹茶糊（参考抹茶拿铁）',amount:'按量'},
-     {name:'椰浆',amount:'按杯型'}
-   ],
-   steps:['配方待确认，暂用占位'],
-   notes:['配方待补充，请询问店长确认']},
-  {id:5,emoji:'🧃',name:'鲜榨果汁',price:'¥33',img:'',
-   ingredients:[{name:'新鲜水果',amount:'顾客自选'}],
-   steps:['按顾客选择水果现榨，出品前确认无籽'],
-   notes:[]},
-];
-
-let data=[], editMode=false, openCards=new Set();
-
-function load(){
-  try{
-    const s=localStorage.getItem(STORE);
-    data=normalizeData(s?JSON.parse(s):DEFAULT);
-  } catch {
-    data=normalizeData(DEFAULT);
-  }
-}
-function save(){
-  try{
-    localStorage.setItem(STORE,JSON.stringify(data));
-    updateStatus();
-  } catch(e){
-    showToast('存储已满，请删除一些图片');
-  }
-}
-function clone(x){return JSON.parse(JSON.stringify(x))}
-function nextId(){return data.length?Math.max(...data.map(d=>d.id))+1:1}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function hasLocalDraft(){
-  try{return !!localStorage.getItem(STORE)}catch{return false}
-}
-function openAllCards(){openCards=new Set(data.map(d=>d.id))}
-function normalizeData(source){
-  const list=Array.isArray(source)?source:Array.isArray(source&&source.data)?source.data:[];
-  return list.map((item,idx)=>({
-    id:Number(item&&item.id)||idx+1,
-    emoji:item&&item.emoji?String(item.emoji):'☕',
-    name:item&&item.name?String(item.name):`饮品 ${idx+1}`,
-    price:item&&item.price?String(item.price):'¥--',
-    img:item&&item.img?String(item.img):'',
-    ingredients:Array.isArray(item&&item.ingredients)
-      ?item.ingredients.map(ing=>({name:String(ing&&ing.name||''),amount:String(ing&&ing.amount||'')}))
-      :[{name:'',amount:''}],
-    steps:Array.isArray(item&&item.steps)
-      ?item.steps.map(step=>String(step||''))
-      :[''],
-    notes:Array.isArray(item&&item.notes)
-      ?item.notes.map(note=>String(note||''))
-      :[],
-  }));
-}
-function updateStatus(){
-  const chip=document.getElementById('statusChip');
-  const text=document.getElementById('statusText');
-  const resetBtn=document.getElementById('resetBtn');
-  const usingLocal=hasLocalDraft();
-  if(chip)chip.textContent=usingLocal?'本机草稿':PUBLISHED_LABEL;
-  if(text){
-    text.textContent=usingLocal
-      ?'这台手机正在查看本机保存的修改，其他手机不会自动同步。需要统一更新时，请重新发布门店版本。'
-      :'当前显示门店发布版，所有手机都能通过同一个链接查看。';
-  }
-  if(resetBtn)resetBtn.disabled=!usingLocal;
-}
-function exportData(){
-  const payload={
-    version:1,
-    exportedAt:new Date().toISOString(),
-    publishedLabel:PUBLISHED_LABEL,
-    data,
-  };
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  const stamp=new Date().toISOString().slice(0,10);
-  a.href=url;
-  a.download=`coffee-sop-backup-${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  showToast('已导出当前备份');
-}
-function importData(event){
-  const file=event.target.files&&event.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const parsed=JSON.parse(ev.target.result);
-      const nextData=normalizeData(parsed);
-      if(!nextData.length)throw new Error('empty');
-      data=nextData;
-      openAllCards();
-      save();
-      renderList();
-      showToast('备份已导入到当前设备');
-    } catch {
-      showToast('导入失败，请选择正确的 JSON 备份文件');
-    } finally {
-      event.target.value='';
-    }
-  };
-  reader.readAsText(file);
-}
-function resetPublishedData(){
-  if(!hasLocalDraft())return;
-  if(!confirm('确认恢复到门店发布版？这台手机上未同步的修改会被清除。'))return;
-  try{localStorage.removeItem(STORE)}catch{}
-  data=normalizeData(DEFAULT);
-  openAllCards();
-  renderList();
-  updateStatus();
-  showToast('已恢复门店发布版');
-}
-
-// ═══════════════════════════════════════════════════════
-//  RENDER LIST
-// ═══════════════════════════════════════════════════════
-function renderList(){
-  const q=(document.getElementById('searchInput').value||'').toLowerCase();
-  const area=document.getElementById('listArea');
-  area.innerHTML='';
-  const list=data.filter(d=>!q||d.name.toLowerCase().includes(q)||(d.ingredients||[]).some(i=>i.name.toLowerCase().includes(q)));
-  if(!list.length){
-    area.innerHTML='<div class="empty"><span class="empty-icon">🔍</span>没有找到匹配的饮品</div>';
-    return;
-  }
-  list.forEach(d=>area.appendChild(buildCard(d)));
-}
-
-function buildCard(d){
-  const isOpen=openCards.has(d.id);
-  const wrap=document.createElement('div');
-  wrap.className='card'+(isOpen?' open':'');
-  wrap.id='card-'+d.id;
-
-  // ── HEADER ──
-  const hdr=document.createElement('div');
-  hdr.className='card-hdr';
-  hdr.onclick=()=>toggleCard(d.id);
-
-  const thumb=document.createElement('div');
-  thumb.className='card-img-thumb';
-  if(d.img){const im=document.createElement('img');im.src=d.img;im.alt='';thumb.appendChild(im)}
-  else thumb.textContent=d.emoji||'☕';
-
-  const meta=document.createElement('div');
-  meta.className='card-meta';
-
-  if(editMode){
-    meta.innerHTML=`<input class="edit-name-input" value="${esc(d.name)}" onchange="upField(${d.id},'name',this.value)" onclick="event.stopPropagation()"><br>
-    <input class="edit-price-input" value="${esc(d.price)}" onchange="upField(${d.id},'price',this.value)" onclick="event.stopPropagation()">`;
-  } else {
-    meta.innerHTML=`<div class="card-name">${esc(d.name)}</div><span class="card-price">${esc(d.price)}</span>`;
-  }
-
-  const chev=document.createElement('span');
-  chev.className='card-chev';chev.textContent='▶';
-
-  hdr.appendChild(thumb);hdr.appendChild(meta);
-
-  if(editMode){
-    const delBtn=document.createElement('button');
-    delBtn.className='hdr-btn';delBtn.style.cssText='background:rgba(220,50,50,.12);color:#c0392b;border-color:rgba(220,50,50,.2);font-size:11px;padding:4px 10px';
-    delBtn.textContent='删除';
-    delBtn.onclick=(e)=>{e.stopPropagation();deleteDrink(d.id)};
-    hdr.appendChild(delBtn);
-  }
-  hdr.appendChild(chev);
-
-  // ── BODY ──
-  const body=document.createElement('div');
-  body.className='card-body';
-  body.innerHTML=editMode?buildEditBody(d):buildViewBody(d);
-
-  wrap.appendChild(hdr);wrap.appendChild(body);
-  return wrap;
-}
-
-function toggleCard(id){
-  if(openCards.has(id))openCards.delete(id);else openCards.add(id);
-  const card=document.getElementById('card-'+id);
-  if(card)card.classList.toggle('open',openCards.has(id));
-  const chev=card&&card.querySelector('.card-chev');
-  if(chev)chev.style.transform=openCards.has(id)?'rotate(90deg)':'';
-}
-
-// ─── VIEW body ───
-function buildViewBody(d){
-  let h='';
-  if(d.img)h+=`<img class="card-hero" src="${esc(d.img)}" alt="">`;
-  h+=`<div class="sec-label">原料配方</div><div class="ingr-grid">`;
-  (d.ingredients||[]).forEach(i=>{
-    h+=`<div class="ingr-row"><div class="ingr-dot"></div>
-    <span class="ingr-name-v">${esc(i.name)}</span>
-    <span class="ingr-amt-v">${esc(i.amount)}</span></div>`;
-  });
-  h+=`</div><div class="sec-label">制作步骤</div><div class="steps">`;
-  (d.steps||[]).forEach((s,i)=>{
-    h+=`<div class="step-row"><div class="step-n">${i+1}</div><div class="step-t">${esc(s)}</div></div>`;
-  });
-  h+=`</div>`;
-  if((d.notes||[]).length){
-    h+=`<div class="sec-label">注意事项</div>`;
-    d.notes.forEach(n=>{h+=`<div class="note-box"><span class="note-icon">⚠</span><div class="note-t">${esc(n)}</div></div>`;});
-  }
-  return h;
-}
-
-// ─── EDIT body ───
-function buildEditBody(d){
-  let h='';
-  // image upload
-  h+=`<div class="sec-label">配方图片</div>`;
-  if(d.img){
-    h+=`<div class="img-preview-wrap">
-      <img class="img-preview" src="${esc(d.img)}" alt="">
-      <button class="img-remove" onclick="removeImg(${d.id})">✕ 删除图片</button>
-    </div>`;
-  } else {
-    h+=`<div class="img-upload-wrap">
-      <label class="img-upload-btn">
-        <span>📷</span><span>上传图片</span>
-        <input class="img-upload-input" type="file" accept="image/*" onchange="handleImg(event,${d.id})">
-      </label>
-    </div>`;
-  }
-
-  // ingredients
-  h+=`<div class="sec-label">原料配方</div>`;
-  (d.ingredients||[]).forEach((ing,j)=>{
-    h+=`<div class="edit-row">
-      <input class="ef ef-name" value="${esc(ing.name)}" placeholder="原料名称" onchange="upIngr(${d.id},${j},'name',this.value)">
-      <input class="ef ef-amt" value="${esc(ing.amount)}" placeholder="用量" onchange="upIngr(${d.id},${j},'amount',this.value)">
-      <button class="del-x" onclick="rmIngr(${d.id},${j})">✕</button>
-    </div>`;
-  });
-  h+=`<button class="add-btn" onclick="addIngr(${d.id})">＋ 添加原料</button>`;
-
-  // steps
-  h+=`<div class="sec-label">制作步骤</div>`;
-  (d.steps||[]).forEach((s,j)=>{
-    h+=`<div class="edit-step-row">
-      <div class="step-n" style="margin-top:9px">${j+1}</div>
-      <textarea class="ef" rows="2" onchange="upStep(${d.id},${j},this.value)">${esc(s)}</textarea>
-      <button class="del-x" onclick="rmStep(${d.id},${j})">✕</button>
-    </div>`;
-  });
-  h+=`<button class="add-btn" onclick="addStep(${d.id})">＋ 添加步骤</button>`;
-
-  // notes
-  h+=`<div class="sec-label">注意事项</div>`;
-  (d.notes||[]).forEach((n,j)=>{
-    h+=`<div class="note-box" style="margin-bottom:5px">
-      <span class="note-icon">⚠</span>
-      <textarea class="ef edit-note-ta" rows="1" onchange="upNote(${d.id},${j},this.value)">${esc(n)}</textarea>
-      <button class="del-x" onclick="rmNote(${d.id},${j})">✕</button>
-    </div>`;
-  });
-  h+=`<button class="add-btn" onclick="addNote(${d.id})">＋ 添加注意事项</button>`;
-  return h;
-}
-
-// ═══════════════════════════════════════════════════════
-//  EDIT MODE
-// ═══════════════════════════════════════════════════════
-function toggleEdit(){
-  editMode=!editMode;
-  const btn=document.getElementById('editBtn');
-  btn.textContent=editMode?'完成':'编辑';
-  btn.className='hdr-btn'+(editMode?' active':'');
-  document.getElementById('fab').style.display=editMode?'flex':'none';
-  if(editMode)openAllCards();
-  updateStatus();
-  renderList();
-}
-
-function upField(id,field,val){const d=data.find(x=>x.id===id);if(d){d[field]=val;save()}}
-function upIngr(id,j,f,v){const d=data.find(x=>x.id===id);if(d&&d.ingredients[j]){d.ingredients[j][f]=v;save()}}
-function upStep(id,j,v){const d=data.find(x=>x.id===id);if(d){d.steps[j]=v;save()}}
-function upNote(id,j,v){const d=data.find(x=>x.id===id);if(d){d.notes[j]=v;save()}}
-function rmIngr(id,j){const d=data.find(x=>x.id===id);if(d){d.ingredients.splice(j,1);save();renderList()}}
-function addIngr(id){const d=data.find(x=>x.id===id);if(d){d.ingredients.push({name:'',amount:''});save();renderList()}}
-function rmStep(id,j){const d=data.find(x=>x.id===id);if(d){d.steps.splice(j,1);save();renderList()}}
-function addStep(id){const d=data.find(x=>x.id===id);if(d){d.steps.push('');save();renderList()}}
-function rmNote(id,j){const d=data.find(x=>x.id===id);if(d){d.notes.splice(j,1);save();renderList()}}
-function addNote(id){const d=data.find(x=>x.id===id);if(d){d.notes.push('');save();renderList()}}
-function deleteDrink(id){
-  const d=data.find(x=>x.id===id);if(!d)return;
-  if(!confirm(`确认删除「${d.name}」？此操作不可撤销。`))return;
-  data=data.filter(x=>x.id!==id);openCards.delete(id);save();renderList();
-}
-
-// ─── IMAGE UPLOAD ───
-function handleImg(e,id){
-  const file=e.target.files[0];if(!file)return;
-  if(file.size>3*1024*1024){showToast('图片太大，请选择 3MB 以内的图片');return}
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    const d=data.find(x=>x.id===id);
-    if(d){d.img=ev.target.result;save();renderList();showToast('图片已保存')}
-  };
-  reader.readAsDataURL(file);
-}
-function removeImg(id){
-  const d=data.find(x=>x.id===id);if(d){d.img='';save();renderList()}
-}
-
-// ═══════════════════════════════════════════════════════
-//  ADD DRINK MODAL
-// ═══════════════════════════════════════════════════════
-function openAddModal(){document.getElementById('addModal').classList.add('show');setTimeout(()=>document.getElementById('newName').focus(),100)}
-function closeAddModal(){document.getElementById('addModal').classList.remove('show')}
-function confirmAdd(){
-  const emoji=document.getElementById('newEmoji').value.trim()||'☕';
-  const name=document.getElementById('newName').value.trim();
-  const price=document.getElementById('newPrice').value.trim()||'¥--';
-  if(!name){showToast('请输入饮品名称');return}
-  const newD={id:nextId(),emoji,name,price,img:'',
-    ingredients:[{name:'',amount:''}],steps:[''],notes:[]};
-  data.push(newD);openCards.add(newD.id);save();
-  document.getElementById('newEmoji').value='';
-  document.getElementById('newName').value='';
-  document.getElementById('newPrice').value='';
-  closeAddModal();renderList();showToast('已添加「'+name+'」');
-}
-
-// ═══════════════════════════════════════════════════════
-//  PRINT / PDF VIEW
-// ═══════════════════════════════════════════════════════
-function showView(v){
-  const app=document.querySelector('.app');
-  const fab=document.getElementById('fab');
-  if(v==='print'){
-    app.style.display='none';fab.style.display='none';
-    showPrintPage();
-  }
-}
-
-function showPrintPage(){
-  // Remove old print page if any
-  const old=document.getElementById('printPage');if(old)old.remove();
-  const wrap=document.createElement('div');
-  wrap.id='printPage';
-  wrap.style.cssText='max-width:480px;margin:0 auto;padding-bottom:40px';
-
-  // toolbar
-  const toolbar=document.createElement('div');
-  toolbar.style.cssText='background:var(--brew);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px;';
-  toolbar.innerHTML=`
-    <button onclick="closePrintPage()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;color:#fff;font-family:var(--sans);font-size:12px;padding:5px 12px;cursor:pointer;">← 返回</button>
-    <span style="flex:1;font-family:var(--serif);font-size:15px;font-weight:600;">打印 / 导出</span>
-    <button onclick="doPrint()" style="background:#fff;color:var(--brew);border:none;border-radius:100px;font-family:var(--sans);font-size:12px;font-weight:500;padding:6px 14px;cursor:pointer;">🖨 打印</button>
-  `;
-  wrap.appendChild(toolbar);
-
-  // tip
-  const tip=document.createElement('div');
-  tip.style.cssText='padding:10px 14px;font-size:12px;color:var(--text-mute);background:#fffbf5;border-bottom:1px solid var(--border)';
-  tip.textContent='手机上点「打印」→ 选择「另存为 PDF」即可保存。';
-  wrap.appendChild(tip);
-
-  // preview content
-  const preview=document.createElement('div');
-  preview.id='printContent';
-  preview.style.cssText='padding:16px 14px';
-  data.forEach(d=>{
-    const block=document.createElement('div');
-    block.className='print-drink-block';
-    let h=`<div class="print-drink-name">${esc(d.emoji)} ${esc(d.name)}</div>
-    <div class="print-price">${esc(d.price)}</div>`;
-    if(d.img)h+=`<img class="print-img" src="${esc(d.img)}" alt="">`;
-    h+=`<div class="print-section">原料配方</div>`;
-    (d.ingredients||[]).filter(i=>i.name).forEach(i=>{
-      h+=`<div class="print-ing-row"><span class="print-ing-name">· ${esc(i.name)}</span><span class="print-ing-amt">${esc(i.amount)}</span></div>`;
-    });
-    h+=`<div class="print-section">制作步骤</div>`;
-    (d.steps||[]).filter(s=>s).forEach((s,i)=>{
-      h+=`<div class="print-step"><div class="print-step-n">${i+1}</div><div>${esc(s)}</div></div>`;
-    });
-    (d.notes||[]).filter(n=>n).forEach(n=>{
-      h+=`<div class="print-note">⚠ ${esc(n)}</div>`;
-    });
-    block.innerHTML=h;preview.appendChild(block);
-  });
-  wrap.appendChild(preview);
-  document.body.appendChild(wrap);
-}
-
-function closePrintPage(){
-  const p=document.getElementById('printPage');if(p)p.remove();
-  document.querySelector('.app').style.display='';
-  document.getElementById('fab').style.display=editMode?'flex':'none';
-}
-
-function doPrint(){
-  const content=document.getElementById('printContent');
-  if(!content)return;
-  const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head>
-  <meta charset="UTF-8"><title>咖啡店 SOP</title>
-  <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC",sans-serif;padding:24px;font-size:13px;color:#1a1a1a;line-height:1.8}
-  h1{font-family:"Iowan Old Style","Palatino Linotype","Songti SC","STSong",serif;font-size:20px;color:#2C5F2E;text-align:center;margin-bottom:6px}
-  .sub{text-align:center;font-size:11px;color:#999;margin-bottom:24px}
-  .block{margin-bottom:24px;border-bottom:1px solid #eee;padding-bottom:20px;page-break-inside:avoid}
-  .dname{font-family:"Iowan Old Style","Palatino Linotype","Songti SC","STSong",serif;font-size:16px;font-weight:600;color:#2C5F2E}
-  .dprice{font-size:11px;color:#c17f2e;margin-bottom:10px}
-  .slabel{font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#999;margin:10px 0 5px}
-  .irow{display:flex;gap:8px;margin-bottom:3px}
-  .iname{flex:1;color:#4a4a4a}.iamt{color:#2C5F2E;font-weight:500}
-  .srow{display:flex;gap:8px;margin-bottom:5px}
-  .sn{min-width:18px;height:18px;border-radius:50%;background:#2C5F2E;color:#fff;font-size:9px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
-  .note{background:#fef8ed;border-left:2px solid #c17f2e;padding:5px 8px;font-size:11px;color:#7a5c00;margin-top:4px;border-radius:0 4px 4px 0}
-  .dimg{width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:10px;border:1px solid #e2e2e2}
-  @media print{body{padding:16px}}
-  </style></head><body>
-  <h1>☕ 咖啡店 SOP 操作手册</h1>
-  <div class="sub">标准操作程序 · 仅供内部使用</div>`);
-  data.forEach(d=>{
-    w.document.write(`<div class="block"><div class="dname">${esc(d.emoji)} ${esc(d.name)}</div><div class="dprice">${esc(d.price)}</div>`);
-    if(d.img)w.document.write(`<img class="dimg" src="${esc(d.img)}" alt="">`);
-    w.document.write(`<div class="slabel">原料配方</div>`);
-    (d.ingredients||[]).filter(i=>i.name).forEach(i=>w.document.write(`<div class="irow"><span class="iname">· ${esc(i.name)}</span><span class="iamt">${esc(i.amount)}</span></div>`));
-    w.document.write(`<div class="slabel">制作步骤</div>`);
-    (d.steps||[]).filter(s=>s).forEach((s,i)=>w.document.write(`<div class="srow"><div class="sn">${i+1}</div><div>${esc(s)}</div></div>`));
-    (d.notes||[]).filter(n=>n).forEach(n=>w.document.write(`<div class="note">⚠ ${esc(n)}</div>`));
-    w.document.write(`</div>`);
-  });
-  w.document.write(`</body></html>`);
-  w.document.close();
-  w.onload=()=>w.print();
-}
-
-// ═══════════════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════════════
-let toastT;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);
-}
-function registerServiceWorker(){
-  if(!('serviceWorker' in navigator))return;
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════
-load();
-openAllCards();
-renderList();
-updateStatus();
-document.getElementById('fab').style.display='none';
-registerServiceWorker();
-</script>
+<script src="./firebase-config.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
