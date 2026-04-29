@@ -1,6 +1,6 @@
 const STORE = 'coffee_sop_v2';
 const CLOUD_HASH_KEY = 'coffee_sop_v2_cloud_hash';
-const PUBLISHED_LABEL = '2026.04 发布版';
+const PUBLISHED_LABEL = '2026.04.29 发布版';
 const FIREBASE_SDK_VERSION = '12.7.0';
 const IMAGE_MAX_DATA_URL_LENGTH = 460000;
 const IMAGE_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -60,6 +60,62 @@ const DEFAULT = [
    ingredients:[{name:'新鲜水果',amount:'顾客自选'}],
    steps:['按顾客选择水果现榨，出品前确认无籽'],
    notes:[]},
+  {id:6,sort:6,emoji:'🥃',name:'爱尔兰咖啡',price:'¥45',img:'',
+   ingredients:[
+     {name:'淡奶油',amount:'50g'},
+     {name:'浓缩咖啡',amount:'按当天比例'},
+     {name:'65°热水',amount:'165g'},
+     {name:'爱尔兰威士忌',amount:'45g（两个小的量杯）'},
+     {name:'蜂蜜',amount:'8g'}
+   ],
+   steps:[
+     '爱尔兰咖啡杯加入45g威士忌，再加入8g蜂蜜，吧勺搅匀，尝一口类似old fashion的口感',
+     '加入浓缩咖啡和热水165g',
+     '打发50g奶油至流动状态，奶油封顶'
+   ],
+   notes:['奶油不要太稠，大概就是50g膨胀到100g']},
+  {id:7,sort:7,emoji:'🍊',name:'君度冰橙美式',price:'¥40',img:'',
+   ingredients:[
+     {name:'君度利口酒',amount:'45g'},
+     {name:'橙汁',amount:'按杯量到8分满'},
+     {name:'冰块',amount:'100g'},
+     {name:'浓缩咖啡',amount:'按当天比例'}
+   ],
+   steps:[
+     '加入45g君度利口酒和适量橙汁吧勺搅匀，浓缩封顶'
+   ],
+   notes:[]},
+  {id:8,sort:8,emoji:'🍺',name:'黄油啤酒拿铁',price:'¥39',img:'',
+   ingredients:[
+     {name:'黄油啤酒糖浆',amount:'6g'},
+     {name:'牛奶',amount:''},
+     {name:'浓缩咖啡',amount:''}
+   ],
+   steps:[
+     '黄油啤酒糖浆 + 浓缩用打发棒打发出泡沫'
+   ],
+   notes:[]},
+  {id:9,sort:9,emoji:'🫖',name:'现煮红枣老白茶',price:'¥39',img:'',
+   ingredients:[
+     {name:'红枣',amount:'6颗'},
+     {name:'老白茶',amount:'8g'}
+   ],
+   steps:[
+     '洗干净红枣用刀切开，壶中加入8g老白茶叶，点火加热8分钟，倒出一壶按人数给小杯子'
+   ],
+   notes:[]},
+  {id:10,sort:10,emoji:'🥜',name:'好事花生',price:'¥43',img:'',
+   ingredients:[
+     {name:'巧克力花生酱',amount:'10g'},
+     {name:'浓缩咖啡',amount:''},
+     {name:'淡奶油',amount:'50g'},
+     {name:'牛奶',amount:'150g'}
+   ],
+   steps:[
+     '浓缩 + 巧克力花生酱用勺子搅拌均匀，再加入淡奶油打发',
+     '高脚杯150g牛奶，咖啡花生奶油封顶搭配苏打饼干'
+   ],
+   notes:['奶油不要太稠，打稠了可以加入适量牛奶重新打发']},
 ];
 
 let data = [];
