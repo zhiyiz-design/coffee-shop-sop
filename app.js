@@ -966,20 +966,7 @@ async function initCloud(force = false){
     const appExists = getApps().some(item=>item.name === appName);
     const app = appExists ? getApp(appName) : initializeApp(firebase.config, appName);
 
-    let db;
-    if(appExists){
-      db = firestore.getFirestore(app);
-    } else {
-      try{
-        db = firestore.initializeFirestore(app, {
-          localCache: firestore.persistentLocalCache({
-            tabManager: firestore.persistentMultipleTabManager(),
-          }),
-        });
-      } catch {
-        db = firestore.getFirestore(app);
-      }
-    }
+    const db = firestore.getFirestore(app);
 
     cloud.modules = firestore;
     cloud.db = db;
