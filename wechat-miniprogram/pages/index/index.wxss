@@ -124,6 +124,72 @@
   line-height: 1.5;
 }
 
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  margin: 0 auto;
+  padding: 18rpx 30rpx 22rpx;
+  border-left: 5rpx solid #7a5732;
+  border-right: 5rpx solid #7a5732;
+  border-top: 3rpx dashed #c7a677;
+  background: #f5ead0;
+}
+
+.avatar-picker {
+  width: 84rpx;
+  height: 84rpx;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 4rpx solid #8b6840;
+  border-radius: 50%;
+  background: #d09a6b;
+}
+
+.avatar-picker::after {
+  border: 0;
+}
+
+.profile-avatar {
+  width: 84rpx;
+  height: 84rpx;
+  display: block;
+}
+
+.profile-avatar.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff7e8;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.profile-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-label {
+  color: #6b4528;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.nickname-input {
+  min-height: 56rpx;
+  margin-top: 8rpx;
+  padding: 0 18rpx;
+  border: 3rpx solid #c7a677;
+  border-radius: 999rpx;
+  background: #fff7e8;
+  color: #6b4528;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
 .tools {
   margin: 0 auto;
   padding: 20rpx 30rpx 26rpx;
@@ -398,6 +464,84 @@
   font-size: 27rpx;
   font-weight: 700;
   line-height: 1.55;
+}
+
+.history-heading {
+  margin-top: 34rpx;
+}
+
+.history-empty {
+  padding: 20rpx 22rpx;
+  border: 3rpx dashed #c7a677;
+  border-radius: 12rpx;
+  background: #fffaf0;
+  color: #8c6840;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.history-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-top: 2rpx dashed #d8bd91;
+}
+
+.history-row:first-of-type {
+  border-top: 0;
+}
+
+.history-avatar {
+  width: 62rpx;
+  height: 62rpx;
+  flex-shrink: 0;
+  border: 3rpx solid #8b6840;
+  border-radius: 50%;
+  background: #d09a6b;
+}
+
+.history-avatar.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff7e8;
+  font-size: 25rpx;
+  font-weight: 700;
+}
+
+.history-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.history-name {
+  color: #6b4528;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.history-time {
+  flex-shrink: 0;
+  color: #a98255;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.history-summary {
+  margin-top: 6rpx;
+  color: #8c6840;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .emoji-edit,

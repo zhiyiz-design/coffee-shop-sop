@@ -2,6 +2,7 @@ var defaultData = require('../../data/default-drinks');
 var cloneDrinks = defaultData.cloneDrinks;
 
 var STORAGE_KEY = 'coffee_sop_miniprogram';
+var PROFILE_KEY = 'coffee_sop_profile';
 var STATUS = {
   loading: {
     chip: '同步中',
@@ -57,7 +58,31 @@ function normalizeDrink(item, index) {
       : [''],
     notes: Array.isArray(item && item.notes)
       ? item.notes.map(function (note) { return String(note || ''); })
-      : []
+      : [],
+    history: normalizeHistory(item && item.history)
+  };
+}
+
+function normalizeHistory(history) {
+  return (Array.isArray(history) ? history : [])
+    .map(function (record) {
+      return {
+        id: String(record && record.id || ''),
+        action: String(record && record.action || '修改 SOP'),
+        summary: String(record && record.summary || ''),
+        nickName: String(record && record.nickName || '未设置昵称'),
+        avatarUrl: String(record && record.avatarUrl || ''),
+        time: String(record && record.time || '')
+      };
+    })
+    .filter(function (record) { return !!record.time; })
+    .slice(0, 12);
+}
+
+function normalizeProfile(profile) {
+  return {
+    nickName: String(profile && profile.nickName || '').trim(),
+    avatarUrl: String(profile && profile.avatarUrl || '').trim()
   };
 }
 
@@ -88,6 +113,15 @@ function findDrink(drinks, id) {
   return null;
 }
 
+function formatHistoryTime(value) {
+  var date = value ? new Date(value) : null;
+  if (!date || isNaN(date.getTime())) return String(value || '');
+  function pad(num) {
+    return num < 10 ? '0' + num : String(num);
+  }
+  return (date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+}
+
 Page({
   data: {
     drinks: [],
@@ -98,7 +132,13 @@ Page({
     viewMode: true,
     dirty: false,
     loading: false,
-    status: STATUS.loading
+    status: STATUS.loading,
+    profile: {
+      nickName: '',
+      avatarUrl: ''
+    },
+    profileReady: false,
+    avatarUploading: false
   },
 
   onLoad: function () {
@@ -111,6 +151,7 @@ Page({
       console.warn('分享菜单初始化失败。', error);
     }
     this.loadLocal();
+    this.loadProfile();
     this.setStatus('local');
   },
 
@@ -128,15 +169,42 @@ Page({
 
   onShareAppMessage: function () {
     return {
-      title: '咖啡店 SOP',
+      title: '月白的厨房秘诀',
       path: '/pages/index/index'
     };
   },
 
   onShareTimeline: function () {
     return {
-      title: '咖啡店 SOP 标准操作手册'
+      title: '月白的厨房秘诀'
     };
+  },
+
+  loadProfile: function () {
+    var saved = null;
+    try {
+      saved = wx.getStorageSync(PROFILE_KEY);
+    } catch (error) {
+      console.warn('编辑身份读取失败。', error);
+    }
+    var profile = normalizeProfile(saved);
+    this.setData({
+      profile: profile,
+      profileReady: !!(profile.nickName || profile.avatarUrl)
+    });
+  },
+
+  persistProfile: function (profile) {
+    var normalized = normalizeProfile(profile);
+    try {
+      wx.setStorageSync(PROFILE_KEY, normalized);
+    } catch (error) {
+      console.warn('编辑身份保存失败。', error);
+    }
+    this.setData({
+      profile: normalized,
+      profileReady: !!(normalized.nickName || normalized.avatarUrl)
+    });
   },
 
   loadLocal: function () {
@@ -216,6 +284,20 @@ Page({
           text: String(note || '')
         };
       });
+      viewDrink.historyViews = (drink.history || []).map(function (record, index) {
+        return {
+          uid: drink.id + '-history-' + index,
+          index: index,
+          action: record.action,
+          summary: record.summary,
+          nickName: record.nickName,
+          avatarUrl: record.avatarUrl,
+          hasAvatar: !!record.avatarUrl,
+          noAvatar: !record.avatarUrl,
+          timeText: formatHistoryTime(record.time)
+        };
+      });
+      viewDrink.hasHistory = viewDrink.historyViews.length > 0;
       return viewDrink;
     });
     this.setData({ visibleDrinks: visibleDrinks });
@@ -273,27 +355,81 @@ Page({
       wx.showToast({ title: '请先开通云开发', icon: 'none' });
       return;
     }
+    if (page.data.avatarUploading) {
+      wx.showToast({ title: '头像上传中，请稍等', icon: 'none' });
+      return;
+    }
 
-    var drinks = normalizeData(page.data.drinks);
-    page.setData({ loading: true });
-    page.setStatus('loading');
-    wx.cloud.callFunction({
-      name: 'sopApi',
-      data: { action: 'saveAll', drinks: drinks },
-      success: function () {
-        page.persistLocal(drinks);
-        page.setData({ drinks: drinks, dirty: false });
-        page.setStatus('synced');
-        page.updateVisible();
-        wx.showToast({ title: '已保存云端', icon: 'success' });
+    page.ensureCloudAvatar(function (profile) {
+      var drinks = normalizeData(page.data.drinks);
+      page.setData({ loading: true });
+      page.setStatus('loading');
+      wx.cloud.callFunction({
+        name: 'sopApi',
+        data: {
+          action: 'saveAll',
+          drinks: drinks,
+          profile: profile
+        },
+        success: function (result) {
+          var savedDrinks = normalizeData(result && result.result && result.result.drinks || drinks);
+          page.persistLocal(savedDrinks);
+          page.setData({ drinks: savedDrinks, dirty: false });
+          page.setStatus('synced');
+          page.updateVisible();
+          wx.showToast({ title: '已保存云端', icon: 'success' });
+        },
+        fail: function (error) {
+          console.warn('云端保存失败', error);
+          page.setStatus('error');
+          wx.showToast({ title: '保存失败', icon: 'none' });
+        },
+        complete: function () {
+          page.setData({ loading: false });
+        }
+      });
+    });
+  },
+
+  onNicknameInput: function (event) {
+    var profile = normalizeProfile(this.data.profile);
+    profile.nickName = event.detail.value || '';
+    this.persistProfile(profile);
+  },
+
+  onChooseAvatar: function (event) {
+    var avatarUrl = event && event.detail && event.detail.avatarUrl;
+    if (!avatarUrl) return;
+    var profile = normalizeProfile(this.data.profile);
+    profile.avatarUrl = avatarUrl;
+    this.persistProfile(profile);
+    this.ensureCloudAvatar(function () {});
+  },
+
+  ensureCloudAvatar: function (done) {
+    var app = getApp();
+    var page = this;
+    var profile = normalizeProfile(page.data.profile);
+    if (!app.globalData.cloudReady || !profile.avatarUrl || profile.avatarUrl.indexOf('cloud://') === 0) {
+      done(profile);
+      return;
+    }
+    page.setData({ avatarUploading: true });
+    wx.cloud.uploadFile({
+      cloudPath: 'avatars/editor-' + Date.now() + '.jpg',
+      filePath: profile.avatarUrl,
+      success: function (result) {
+        var updated = normalizeProfile(page.data.profile);
+        updated.avatarUrl = result.fileID || updated.avatarUrl;
+        page.persistProfile(updated);
+        done(updated);
       },
       fail: function (error) {
-        console.warn('云端保存失败', error);
-        page.setStatus('error');
-        wx.showToast({ title: '保存失败', icon: 'none' });
+        console.warn('头像上传失败，将先使用本机头像。', error);
+        done(profile);
       },
       complete: function () {
-        page.setData({ loading: false });
+        page.setData({ avatarUploading: false });
       }
     });
   },

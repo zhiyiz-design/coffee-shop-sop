@@ -5,6 +5,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
 const COLLECTION = 'coffee_sop_drinks';
+const HISTORY_LIMIT = 12;
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
 const COLORS = {
@@ -43,8 +44,24 @@ function normalizeDrink(item, index) {
       : [''],
     notes: Array.isArray(item && item.notes)
       ? item.notes.map(note => String(note || ''))
-      : []
+      : [],
+    history: normalizeHistory(item && item.history)
   };
+}
+
+function normalizeHistory(history) {
+  return (Array.isArray(history) ? history : [])
+    .map(record => ({
+      id: String(record && record.id || ''),
+      action: String(record && record.action || '修改 SOP'),
+      summary: String(record && record.summary || ''),
+      nickName: String(record && record.nickName || '未设置昵称'),
+      avatarUrl: String(record && record.avatarUrl || ''),
+      openid: String(record && record.openid || ''),
+      time: String(record && record.time || '')
+    }))
+    .filter(record => record.time)
+    .slice(0, HISTORY_LIMIT);
 }
 
 function normalizeData(source) {
@@ -72,12 +89,74 @@ async function seedIfEmpty() {
   await Promise.all(tasks);
 }
 
-async function saveAll(drinks) {
+function normalizeProfile(profile, wxContext) {
+  return {
+    openid: String(wxContext && wxContext.OPENID || ''),
+    nickName: String(profile && profile.nickName || '').trim().slice(0, 24) || '未设置昵称',
+    avatarUrl: String(profile && profile.avatarUrl || '').trim()
+  };
+}
+
+function comparableDrink(drink) {
+  const normalized = normalizeDrink(drink || {}, 0);
+  delete normalized.history;
+  return normalized;
+}
+
+function sameDrink(left, right) {
+  return JSON.stringify(comparableDrink(left)) === JSON.stringify(comparableDrink(right));
+}
+
+function changedFields(previous, next) {
+  if (!previous) return ['新增饮品'];
+  const fields = [];
+  if (String(previous.name || '') !== String(next.name || '')) fields.push('名称');
+  if (String(previous.price || '') !== String(next.price || '')) fields.push('价格');
+  if (String(previous.emoji || '') !== String(next.emoji || '')) fields.push('备用图标');
+  if (String(previous.img || '') !== String(next.img || '')) fields.push('饮品照片');
+  if (JSON.stringify(previous.ingredients || []) !== JSON.stringify(next.ingredients || [])) fields.push('原料');
+  if (JSON.stringify(previous.steps || []) !== JSON.stringify(next.steps || [])) fields.push('步骤');
+  if (JSON.stringify(previous.notes || []) !== JSON.stringify(next.notes || [])) fields.push('注意事项');
+  return fields.length ? fields : ['SOP'];
+}
+
+function createHistoryRecord(previous, next, profile) {
+  const fields = changedFields(previous, next);
+  const isNew = !previous;
+  return {
+    id: String(Date.now()) + '-' + String(next.id),
+    action: isNew ? '新增饮品' : '修改饮品',
+    summary: isNew ? '新增了这款饮品' : '修改了' + fields.join('、'),
+    nickName: profile.nickName,
+    avatarUrl: profile.avatarUrl,
+    openid: profile.openid,
+    time: new Date().toISOString()
+  };
+}
+
+async function saveAll(drinks, profile, wxContext) {
   const normalized = normalizeData(drinks);
   const incomingIds = new Set(normalized.map(drink => String(drink.id)));
   const current = await db.collection(COLLECTION).limit(100).get();
+  const currentMap = {};
+  (current.data || []).forEach(drink => {
+    currentMap[String(drink.id || drink._id)] = normalizeDrink(drink, 0);
+  });
+  const editor = normalizeProfile(profile, wxContext);
 
-  const writes = normalized.map(drink =>
+  const savedDrinks = normalized.map(drink => {
+    const previous = currentMap[String(drink.id)];
+    const nextDrink = Object.assign({}, drink);
+    const previousHistory = previous ? previous.history : normalizeHistory(drink.history);
+    nextDrink.history = previousHistory;
+    if (!previous || !sameDrink(previous, drink)) {
+      nextDrink.history = [createHistoryRecord(previous, drink, editor)]
+        .concat(previousHistory)
+        .slice(0, HISTORY_LIMIT);
+    }
+    return nextDrink;
+  });
+  const writes = savedDrinks.map(drink =>
     db.collection(COLLECTION).doc(String(drink.id)).set({ data: drink })
   );
   const deletes = (current.data || [])
@@ -85,7 +164,7 @@ async function saveAll(drinks) {
     .map(drink => db.collection(COLLECTION).doc(String(drink._id)).remove());
 
   await Promise.all([...writes, ...deletes]);
-  return normalized;
+  return normalizeData(savedDrinks);
 }
 
 function cleanPdfText(text) {
@@ -403,10 +482,10 @@ function buildPdfPages(drinks, imageAssets = {}) {
     }
     content += pdfRect(paperX, paperY, paperW, paperH, COLORS.paper);
     content += pdfStrokeRect(paperX, paperY, paperW, paperH, COLORS.coffee, 3);
-    content += pdfTextCentered('月白的厨房秘诀', PAGE_WIDTH / 2, 800, 27, COLORS.coffee);
-    content += pdfTextCentered('咖啡店 SOP 手册', PAGE_WIDTH / 2, 778, 13, COLORS.coffeeLight);
-    content += pdfLine(218, 768, 377, 768, COLORS.gold, 1.4);
-    content += pdfDashedLine(paperX + 20, 752, paperX + paperW - 20, 752, COLORS.gold, 1);
+    content += pdfTextCentered('月白的厨房秘诀', PAGE_WIDTH / 2, 780, 27, COLORS.coffee);
+    content += pdfTextCentered('咖啡店 SOP 手册', PAGE_WIDTH / 2, 758, 13, COLORS.coffeeLight);
+    content += pdfLine(218, 748, 377, 748, COLORS.gold, 1.4);
+    content += pdfDashedLine(paperX + 20, 735, paperX + paperW - 20, 735, COLORS.gold, 1);
 
     if (continuation) {
       content += pdfText(drink.name + ' / 续页', contentX, 716, 21, COLORS.coffee);
@@ -640,8 +719,8 @@ exports.main = async event => {
   }
 
   if (action === 'saveAll') {
-    const drinks = await saveAll(event.drinks);
-    return { ok: true, count: drinks.length };
+    const drinks = await saveAll(event.drinks, event.profile, cloud.getWXContext());
+    return { ok: true, count: drinks.length, drinks };
   }
 
   if (action === 'exportPdf') {

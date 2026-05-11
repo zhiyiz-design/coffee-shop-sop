@@ -19,6 +19,17 @@
     </view>
   </view>
 
+  <view class="profile-card">
+    <button class="avatar-picker" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <image wx:if="{{profile.avatarUrl}}" class="profile-avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="profile-avatar empty">选头像</view>
+    </button>
+    <view class="profile-main">
+      <view class="profile-label">编辑身份</view>
+      <input class="nickname-input" type="nickname" value="{{profile.nickName}}" placeholder="点这里填写昵称，保存时会记录是谁修改" bindinput="onNicknameInput" />
+    </view>
+  </view>
+
   <view class="tools">
     <view class="search">
       <text class="search-icon">搜</text>
@@ -102,6 +113,22 @@
             </view>
           </block>
           <button wx:if="{{editMode}}" class="add-line" size="mini" data-id="{{drink.id}}" bindtap="addNote">+ 注意事项</button>
+
+          <view class="section-title history-heading">修改记录</view>
+          <view wx:if="{{!drink.hasHistory}}" class="history-empty">还没有云端修改记录。设置昵称头像后，保存云端会自动记录。</view>
+          <block wx:for="{{drink.historyViews}}" wx:for-item="record" wx:key="uid">
+            <view class="history-row">
+              <image wx:if="{{record.hasAvatar}}" class="history-avatar" src="{{record.avatarUrl}}" mode="aspectFill" />
+              <view wx:if="{{record.noAvatar}}" class="history-avatar fallback">月</view>
+              <view class="history-main">
+                <view class="history-top">
+                  <text class="history-name">{{record.nickName}}</text>
+                  <text class="history-time">{{record.timeText}}</text>
+                </view>
+                <view class="history-summary">{{record.summary}}</view>
+              </view>
+            </view>
+          </block>
         </view>
       </view>
     </block>
