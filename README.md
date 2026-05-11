@@ -47,6 +47,36 @@ gh api repos/zhiyiz-design/coffee-shop-sop/pages -X POST -F 'source[branch]=main
 
 `https://zhiyiz-design.github.io/coffee-shop-sop/`
 
+## 更稳定的备用网址
+
+如果 GitHub Pages 在手机网络上偶尔打不开，建议同时开一个 Cloudflare Pages 或 Firebase Hosting 入口。两个入口可以指向同一份代码和同一份 Firestore 数据。
+
+### Cloudflare Pages
+
+1. 打开 `https://dash.cloudflare.com/`。
+2. 进入 `Workers & Pages`，选择 `Create application`。
+3. 选择 `Pages`，再选择 `Connect to Git`。
+4. 授权 GitHub 仓库 `zhiyiz-design/coffee-shop-sop`。
+5. 构建设置选择：
+   - Framework preset: `None`
+   - Build command: 留空
+   - Build output directory: `/`
+6. 部署完成后，会得到一个 `*.pages.dev` 链接。
+
+仓库里的 [_headers](/Users/zoeymac/Documents/Work/coffe/_headers) 会让浏览器每次重新确认页面版本，减少手机端长期卡旧版的问题。
+
+### Firebase Hosting
+
+这条路会得到 `coffee-app-430df.web.app` 和 `coffee-app-430df.firebaseapp.com` 两个入口。
+
+```bash
+cd /Users/zoeymac/Documents/Work/coffe
+npx firebase-tools login
+npx firebase-tools deploy --only hosting
+```
+
+仓库里的 [firebase.json](/Users/zoeymac/Documents/Work/coffe/firebase.json) 已经配置好静态文件目录和缓存策略。
+
 ## 启用多人同步
 
 按 [FIREBASE_SETUP.md](/Users/zoeymac/Documents/Work/coffe/FIREBASE_SETUP.md) 完成 Firestore 配置后：
