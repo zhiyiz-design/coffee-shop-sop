@@ -1195,19 +1195,26 @@ function createFallbackPdfBuffer(drinks) {
   return Buffer.concat(chunks);
 }
 
-async function exportPdf(drinks) {
+async function exportPdf(drinks, options) {
   const source = Array.isArray(drinks) && drinks.length ? normalizeData(drinks) : await listDrinks();
-  let renderer = 'pdfkit';
+  const preferPdfkit = options && options.renderer === 'pdfkit';
+  let renderer = 'fallback';
   let pdfBuffer;
-  try {
-    const imageBuffers = await loadImageBuffers(source);
-    const doc = buildPdfDocument(source, imageBuffers);
-    pdfBuffer = await streamToBuffer(doc);
-  } catch (error) {
-    renderer = 'fallback';
-    console.error('PDFKIT_EXPORT_FAILED_FALLBACK_USED', error && (error.stack || error.message) || error);
+
+  if (preferPdfkit) {
+    try {
+      const imageBuffers = await loadImageBuffers(source);
+      const doc = buildPdfDocument(source, imageBuffers);
+      pdfBuffer = await streamToBuffer(doc);
+      renderer = 'pdfkit';
+    } catch (error) {
+      console.error('PDFKIT_EXPORT_FAILED_FALLBACK_USED', error && (error.stack || error.message) || error);
+      pdfBuffer = createFallbackPdfBuffer(source);
+    }
+  } else {
     pdfBuffer = createFallbackPdfBuffer(source);
   }
+
   const stamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   const result = await cloud.uploadFile({
     cloudPath: `exports/coffee-sop-${stamp}.pdf`,
@@ -1243,7 +1250,7 @@ exports.main = async event => {
   }
 
   if (action === 'exportPdf') {
-    return exportPdf(event.drinks);
+    return exportPdf(event.drinks, { renderer: event.renderer });
   }
 
   return { ok: false, message: 'Unknown action' };
