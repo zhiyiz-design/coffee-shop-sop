@@ -1,4 +1,4 @@
-const CLOUD_ENV_ID = 'cloud1';
+const CLOUD_ENV_ID = '';
 
 App({
   globalData: {
