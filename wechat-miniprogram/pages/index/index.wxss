@@ -25,6 +25,13 @@
   background: #f5ead0;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
 .brand {
   flex: 1;
   min-width: 0;
@@ -55,7 +62,7 @@
 }
 
 .top-action {
-  min-width: 116rpx;
+  min-width: 94rpx;
   margin: 0;
   border: 3rpx solid #7a5732;
   border-radius: 999rpx;
@@ -69,6 +76,40 @@
 .top-action.active {
   background: #a8cdb5;
   color: #315b42;
+}
+
+.top-avatar {
+  width: 76rpx;
+  min-width: 76rpx;
+  height: 76rpx;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 4rpx solid #8b6840;
+  border-radius: 50%;
+  background: #d09a6b;
+  box-shadow: 3rpx 3rpx 0 rgba(122, 87, 50, 0.22);
+}
+
+.top-avatar::after {
+  border: 0;
+}
+
+.top-avatar-img {
+  width: 76rpx;
+  height: 76rpx;
+  display: block;
+}
+
+.top-avatar-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  color: #fff7e8;
+  font-size: 20rpx;
+  font-weight: 700;
 }
 
 .status {
@@ -175,6 +216,25 @@
 .profile-label {
   color: #6b4528;
   font-size: 25rpx;
+  font-weight: 700;
+}
+
+.profile-help {
+  margin-top: 8rpx;
+  color: #8c6840;
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.profile-done {
+  flex-shrink: 0;
+  margin: 0;
+  border: 3rpx solid #7a5732;
+  border-radius: 999rpx;
+  background: #8b6840;
+  color: #fff7e8;
+  font-size: 24rpx;
   font-weight: 700;
 }
 

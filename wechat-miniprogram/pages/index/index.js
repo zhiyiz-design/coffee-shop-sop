@@ -138,7 +138,9 @@ Page({
       avatarUrl: ''
     },
     profileReady: false,
-    avatarUploading: false
+    avatarUploading: false,
+    showProfilePanel: false,
+    pendingLoginAction: ''
   },
 
   onLoad: function () {
@@ -190,7 +192,7 @@ Page({
     var profile = normalizeProfile(saved);
     this.setData({
       profile: profile,
-      profileReady: !!(profile.nickName || profile.avatarUrl)
+      profileReady: this.isProfileReady(profile)
     });
   },
 
@@ -203,8 +205,43 @@ Page({
     }
     this.setData({
       profile: normalized,
-      profileReady: !!(normalized.nickName || normalized.avatarUrl)
+      profileReady: this.isProfileReady(normalized)
     });
+  },
+
+  isProfileReady: function (profile) {
+    var current = normalizeProfile(profile || this.data.profile);
+    return !!(current.nickName && current.avatarUrl);
+  },
+
+  openProfilePanel: function () {
+    this.setData({ showProfilePanel: !this.data.showProfilePanel });
+  },
+
+  requireEditor: function (action) {
+    if (this.isProfileReady()) return true;
+    this.setData({
+      showProfilePanel: true,
+      pendingLoginAction: action || ''
+    });
+    wx.showToast({ title: '请先登录再修改', icon: 'none' });
+    return false;
+  },
+
+  finishProfile: function () {
+    if (!this.isProfileReady()) {
+      wx.showToast({ title: '请补全头像和昵称', icon: 'none' });
+      return;
+    }
+    var pending = this.data.pendingLoginAction;
+    this.setData({
+      showProfilePanel: false,
+      pendingLoginAction: ''
+    });
+    if (pending === 'edit') {
+      this.setData({ editMode: true, viewMode: false });
+      this.updateVisible();
+    }
   },
 
   loadLocal: function () {
@@ -351,6 +388,7 @@ Page({
   saveCloud: function () {
     var app = getApp();
     var page = this;
+    if (!page.requireEditor('save')) return;
     if (!app.globalData.cloudReady) {
       wx.showToast({ title: '请先开通云开发', icon: 'none' });
       return;
@@ -372,7 +410,14 @@ Page({
           profile: profile
         },
         success: function (result) {
-          var savedDrinks = normalizeData(result && result.result && result.result.drinks || drinks);
+          var response = result && result.result;
+          if (response && response.ok === false && response.message === 'PROFILE_REQUIRED') {
+            page.setData({ showProfilePanel: true });
+            page.setStatus(page.data.dirty ? 'dirty' : 'local');
+            wx.showToast({ title: '请先登录再保存', icon: 'none' });
+            return;
+          }
+          var savedDrinks = normalizeData(response && response.drinks || drinks);
           page.persistLocal(savedDrinks);
           page.setData({ drinks: savedDrinks, dirty: false });
           page.setStatus('synced');
@@ -492,11 +537,13 @@ Page({
   },
 
   markDirty: function (drinks) {
+    if (!this.requireEditor('modify')) return false;
     var normalized = normalizeData(drinks);
     this.persistLocal(normalized);
     this.setData({ drinks: normalized, dirty: true });
     this.setStatus('dirty');
     this.updateVisible();
+    return true;
   },
 
   onSearch: function (event) {
@@ -511,6 +558,7 @@ Page({
 
   toggleEdit: function () {
     var nextEditMode = !this.data.editMode;
+    if (nextEditMode && !this.requireEditor('edit')) return;
     this.setData({ editMode: nextEditMode, viewMode: !nextEditMode });
     this.updateVisible();
   },
@@ -587,6 +635,7 @@ Page({
     var app = getApp();
     var page = this;
     var id = Number(event.currentTarget.dataset.id);
+    if (!page.requireEditor('image')) return;
     if (!app.globalData.cloudReady) {
       wx.showToast({ title: '请先刷新连接云端', icon: 'none' });
       return;
@@ -612,8 +661,9 @@ Page({
             var drink = findDrink(drinks, id);
             if (!drink) return;
             drink.img = uploadResult.fileID || '';
-            page.markDirty(drinks);
-            wx.showToast({ title: '图片已上传', icon: 'success' });
+            if (page.markDirty(drinks)) {
+              wx.showToast({ title: '图片已上传', icon: 'success' });
+            }
           },
           fail: function (error) {
             console.warn('图片上传失败', error);
@@ -634,11 +684,13 @@ Page({
     var drink = findDrink(drinks, id);
     if (!drink) return;
     drink.img = '';
-    this.markDirty(drinks);
-    wx.showToast({ title: '已删除图片', icon: 'success' });
+    if (this.markDirty(drinks)) {
+      wx.showToast({ title: '已删除图片', icon: 'success' });
+    }
   },
 
   addDrink: function () {
+    if (!this.requireEditor('modify')) return;
     var nextId = this.data.drinks.reduce(function (max, drink) {
       return Math.max(max, Number(drink.id) || 0);
     }, 0) + 1;
@@ -661,6 +713,7 @@ Page({
   },
 
   deleteDrink: function (event) {
+    if (!this.requireEditor('modify')) return;
     var id = Number(event.currentTarget.dataset.id);
     var page = this;
     wx.showModal({
@@ -737,6 +790,7 @@ Page({
   },
 
   importBackup: function () {
+    if (!this.requireEditor('modify')) return;
     var page = this;
     wx.getClipboardData({
       success: function (res) {
@@ -753,6 +807,7 @@ Page({
   },
 
   resetDefault: function () {
+    if (!this.requireEditor('modify')) return;
     var page = this;
     wx.showModal({
       title: '恢复默认',

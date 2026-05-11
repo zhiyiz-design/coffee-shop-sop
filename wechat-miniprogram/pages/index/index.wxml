@@ -7,19 +7,17 @@
         <view class="brand-sub">咖啡店 SOP 手册</view>
       </view>
     </view>
-    <button wx:if="{{viewMode}}" class="top-action" size="mini" bindtap="toggleEdit">编辑</button>
-    <button wx:if="{{editMode}}" class="top-action active" size="mini" bindtap="toggleEdit">完成</button>
-  </view>
-
-  <view class="status {{status.cls}}">
-    <view class="status-chip">{{status.chip}}</view>
-    <view class="status-copy">
-      <view class="status-title">{{status.title}}</view>
-      <view class="status-text">{{status.text}}</view>
+    <view class="topbar-actions">
+      <button wx:if="{{viewMode}}" class="top-action" size="mini" bindtap="toggleEdit">编辑</button>
+      <button wx:if="{{editMode}}" class="top-action active" size="mini" bindtap="toggleEdit">完成</button>
+      <button class="top-avatar" bindtap="openProfilePanel">
+        <image wx:if="{{profileReady}}" class="top-avatar-img" src="{{profile.avatarUrl}}" mode="aspectFill" />
+        <view wx:if="{{!profileReady}}" class="top-avatar-login">登录</view>
+      </button>
     </view>
   </view>
 
-  <view class="profile-card">
+  <view wx:if="{{showProfilePanel}}" class="profile-card">
     <button class="avatar-picker" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
       <image wx:if="{{profile.avatarUrl}}" class="profile-avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
       <view wx:else class="profile-avatar empty">选头像</view>
@@ -27,6 +25,16 @@
     <view class="profile-main">
       <view class="profile-label">编辑身份</view>
       <input class="nickname-input" type="nickname" value="{{profile.nickName}}" placeholder="点这里填写昵称，保存时会记录是谁修改" bindinput="onNicknameInput" />
+      <view class="profile-help">浏览不需要登录；编辑、上传图片、导入或恢复默认前必须登录。</view>
+    </view>
+    <button class="profile-done" size="mini" bindtap="finishProfile">完成</button>
+  </view>
+
+  <view class="status {{status.cls}}">
+    <view class="status-chip">{{status.chip}}</view>
+    <view class="status-copy">
+      <view class="status-title">{{status.title}}</view>
+      <view class="status-text">{{status.text}}</view>
     </view>
   </view>
 

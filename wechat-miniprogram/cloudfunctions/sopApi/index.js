@@ -719,7 +719,12 @@ exports.main = async event => {
   }
 
   if (action === 'saveAll') {
-    const drinks = await saveAll(event.drinks, event.profile, cloud.getWXContext());
+    const wxContext = cloud.getWXContext();
+    const profile = normalizeProfile(event.profile, wxContext);
+    if (!profile.nickName || !profile.avatarUrl) {
+      return { ok: false, message: 'PROFILE_REQUIRED' };
+    }
+    const drinks = await saveAll(event.drinks, profile, wxContext);
     return { ok: true, count: drinks.length, drinks };
   }
 
