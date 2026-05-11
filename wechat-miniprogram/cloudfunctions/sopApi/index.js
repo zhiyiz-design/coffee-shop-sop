@@ -1,7 +1,8 @@
 const cloud = require('wx-server-sdk');
 const path = require('path');
-const PDFDocument = require('pdfkit');
 const { DEFAULT_DRINKS } = require('./default-drinks');
+
+let PDFDocument = null;
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -210,6 +211,13 @@ const FONT_FILES = {
   cnRegular: 'NotoSerifSC-Regular.ttf',
   cnBold: 'NotoSerifSC-Bold.ttf'
 };
+
+function getPDFDocument() {
+  if (!PDFDocument) {
+    PDFDocument = require('pdfkit');
+  }
+  return PDFDocument;
+}
 
 // 字符是不是 "拉丁块"（英文/数字/常用 ASCII 标点） — 给段落分字体用
 function isLatinChar(ch) {
@@ -972,7 +980,8 @@ function drawDrinkPage(doc, drink, imageBuffer, pageIdx, totalPages) {
 // ============================================================
 
 function buildPdfDocument(drinks, imageBuffers) {
-  const doc = new PDFDocument({
+  const PDFKitDocument = getPDFDocument();
+  const doc = new PDFKitDocument({
     size: [PAGE_W, PAGE_H],
     margin: 0,
     autoFirstPage: false,
@@ -1017,11 +1026,188 @@ function streamToBuffer(doc) {
   });
 }
 
+// 备用 PDF：不依赖 pdfkit / 字体文件。云端依赖安装失败时也能导出可读版本。
+function fallbackTextWidth(text, fontSize) {
+  return String(text || '').split('').reduce((total, char) => {
+    if (char === ' ') return total + fontSize * 0.35;
+    return total + (char.charCodeAt(0) < 128 ? fontSize * 0.55 : fontSize);
+  }, 0);
+}
+
+function fallbackWrap(text, fontSize, maxWidth) {
+  const lines = [];
+  let line = '';
+  String(text || '').split('').forEach(char => {
+    const candidate = line + char;
+    if (line && fallbackTextWidth(candidate, fontSize) > maxWidth) {
+      lines.push(line);
+      line = char;
+    } else {
+      line = candidate;
+    }
+  });
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+
+function fallbackUtf16Hex(text) {
+  const safe = String(text || '').replace(/[\uD800-\uDFFF]/g, '');
+  const buffer = Buffer.from(safe, 'utf16le');
+  const bytes = [];
+  for (let index = 0; index < buffer.length; index += 2) {
+    bytes.push(buffer[index + 1], buffer[index]);
+  }
+  return Buffer.from(bytes).toString('hex').toUpperCase();
+}
+
+function fallbackText(text, x, y, size, color = '0.42 0.27 0.16') {
+  return `${color} rg\nBT /F1 ${size} Tf 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm <${fallbackUtf16Hex(text)}> Tj ET\n`;
+}
+
+function fallbackTextRight(text, rightX, y, size, color = '0.42 0.27 0.16') {
+  return fallbackText(text, rightX - fallbackTextWidth(text, size), y, size, color);
+}
+
+function fallbackRect(x, y, width, height, color) {
+  return `${color} rg ${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re f\n`;
+}
+
+function fallbackStrokeRect(x, y, width, height, color = '0.42 0.27 0.16', lineWidth = 1) {
+  return `${color} RG ${lineWidth} w ${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re S\n`;
+}
+
+function fallbackLine(x1, y1, x2, y2, color = '0.55 0.42 0.27', width = 1) {
+  return `${color} RG ${width} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S\n`;
+}
+
+function fallbackPdfObject(id, body) {
+  return `${id} 0 obj\n${body}\nendobj\n`;
+}
+
+function createFallbackPdfBuffer(drinks) {
+  const pageWidth = PAGE_W;
+  const pageHeight = PAGE_H;
+  const source = normalizeData(drinks);
+  const pages = (source.length ? source : [{ id: 0, name: '暂无 SOP 数据', price: '' }]).map((drink, drinkIndex) => {
+    const left = 44;
+    const top = 528;
+    const right = pageWidth - 44;
+    let content = '';
+    content += fallbackRect(0, 0, pageWidth, pageHeight, '0.72 0.86 0.80');
+    content += fallbackRect(18, 18, pageWidth - 36, pageHeight - 36, '0.98 0.94 0.84');
+    content += fallbackStrokeRect(18, 18, pageWidth - 36, pageHeight - 36, '0.42 0.27 0.16', 1.5);
+    content += fallbackText(drink.name || '暂无 SOP 数据', left, top, 25);
+    content += fallbackTextRight(priceText(drink.price), right - 220, top + 4, 13, '0.42 0.27 0.16');
+    content += fallbackText(`${sopId(drink)} / 第 ${drinkIndex + 1} 款 / 总 ${source.length || 1} 款`, left, top - 28, 10.5, '0.55 0.42 0.27');
+    content += fallbackLine(left, top - 42, right, top - 42, '0.55 0.42 0.27', 1.4);
+
+    const photoX = left;
+    const photoY = 284;
+    const photoSize = 176;
+    content += fallbackRect(photoX, photoY, photoSize, photoSize, '0.74 0.57 0.42');
+    content += fallbackStrokeRect(photoX, photoY, photoSize, photoSize, '0.50 0.36 0.22', 1.2);
+    content += fallbackText('饮品照片', photoX + 52, photoY + 86, 14, '1 0.97 0.90');
+
+    const tableX = photoX + photoSize + 24;
+    const tableW = right - tableX;
+    let y = top - 82;
+    content += fallbackText('Ingredients / 原料配方', tableX, y, 17);
+    y -= 24;
+    content += fallbackRect(tableX, y - 4, tableW, 22, '0.94 0.86 0.72');
+    content += fallbackStrokeRect(tableX, y - 4, tableW, 22, '0.78 0.61 0.40', 0.5);
+    content += fallbackText('item', tableX + 8, y + 3, 10, '0.55 0.42 0.27');
+    content += fallbackText('amount', tableX + tableW * 0.68, y + 3, 10, '0.55 0.42 0.27');
+    y -= 22;
+    (drink.ingredients || []).slice(0, 8).forEach((ingredient, index) => {
+      if (index % 2 === 0) content += fallbackRect(tableX, y - 5, tableW, 22, '1 0.97 0.90');
+      content += fallbackText(ingredient.name || '', tableX + 8, y + 1, 11);
+      content += fallbackTextRight(ingredient.amount || '', tableX + tableW - 16, y + 1, 11);
+      y -= 22;
+    });
+
+    y -= 14;
+    content += fallbackText('Steps / 制作步骤', tableX, y, 17);
+    y -= 28;
+    (drink.steps || []).slice(0, 5).forEach((step, index) => {
+      const lines = fallbackWrap(step, 11.5, tableW - 42);
+      content += fallbackRect(tableX, y - lines.length * 15 + 5, 24, 24, '0.42 0.27 0.16');
+      content += fallbackText(String(index + 1), tableX + 8, y - 4, 11, '1 1 1');
+      lines.forEach((line, lineIndex) => {
+        content += fallbackText(line, tableX + 38, y - lineIndex * 15, 11.5);
+      });
+      y -= Math.max(34, lines.length * 15 + 9);
+    });
+
+    const notes = drink.notes || [];
+    if (notes.length) {
+      content += fallbackRect(left, 70, right - left, 48, '1 0.91 0.78');
+      content += fallbackStrokeRect(left, 70, right - left, 48, '0.87 0.55 0.31', 1);
+      content += fallbackText('! 注意', left + 18, 88, 12, '0.75 0.38 0.25');
+      fallbackWrap(notes.join('；'), 12, right - left - 110).slice(0, 2).forEach((line, lineIndex) => {
+        content += fallbackText(line, left + 82, 89 - lineIndex * 16, 12);
+      });
+    }
+
+    content += fallbackLine(left, 44, right, 44, '0.78 0.61 0.40', 0.6);
+    content += fallbackText('月白的厨房秘诀 / 备用 PDF', left, 27, 10, '0.55 0.42 0.27');
+    content += fallbackTextRight(`page ${drinkIndex + 1} of ${source.length || 1}`, right, 27, 10, '0.55 0.42 0.27');
+    return content;
+  });
+
+  const objects = [];
+  const pageRefs = [];
+  const catalogId = 1;
+  const pagesId = 2;
+  const fontId = 3;
+  const cidFontId = 4;
+  const descriptorId = 5;
+  let nextId = 6;
+  objects[catalogId] = fallbackPdfObject(catalogId, `<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+  objects[fontId] = fallbackPdfObject(fontId, `<< /Type /Font /Subtype /Type0 /BaseFont /STSong-Light /Encoding /UniGB-UCS2-H /DescendantFonts [${cidFontId} 0 R] >>`);
+  objects[cidFontId] = fallbackPdfObject(cidFontId, `<< /Type /Font /Subtype /CIDFontType0 /BaseFont /STSong-Light /CIDSystemInfo << /Registry (Adobe) /Ordering (GB1) /Supplement 2 >> /FontDescriptor ${descriptorId} 0 R /DW 1000 >>`);
+  objects[descriptorId] = fallbackPdfObject(descriptorId, '<< /Type /FontDescriptor /FontName /STSong-Light /Flags 6 /FontBBox [-25 -254 1000 880] /ItalicAngle 0 /Ascent 880 /Descent -120 /CapHeight 880 /StemV 80 >>');
+
+  pages.forEach(content => {
+    const pageId = nextId;
+    const streamId = nextId + 1;
+    nextId += 2;
+    const streamBuffer = Buffer.from(content, 'utf8');
+    pageRefs.push(`${pageId} 0 R`);
+    objects[pageId] = fallbackPdfObject(pageId, `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${streamId} 0 R >>`);
+    objects[streamId] = `${streamId} 0 obj\n<< /Length ${streamBuffer.length} >>\nstream\n${content}endstream\nendobj\n`;
+  });
+  objects[pagesId] = fallbackPdfObject(pagesId, `<< /Type /Pages /Kids [${pageRefs.join(' ')}] /Count ${pageRefs.length} >>`);
+
+  const chunks = [Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'binary')];
+  const offsets = [0];
+  for (let id = 1; id < objects.length; id += 1) {
+    if (!objects[id]) continue;
+    offsets[id] = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    chunks.push(Buffer.from(objects[id], 'utf8'));
+  }
+  const xrefOffset = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  let xref = `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let id = 1; id < objects.length; id += 1) {
+    xref += `${String(offsets[id] || 0).padStart(10, '0')} 00000 n \n`;
+  }
+  xref += `trailer\n<< /Size ${objects.length} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  chunks.push(Buffer.from(xref, 'utf8'));
+  return Buffer.concat(chunks);
+}
+
 async function exportPdf(drinks) {
   const source = Array.isArray(drinks) && drinks.length ? normalizeData(drinks) : await listDrinks();
-  const imageBuffers = await loadImageBuffers(source);
-  const doc = buildPdfDocument(source, imageBuffers);
-  const pdfBuffer = await streamToBuffer(doc);
+  let renderer = 'pdfkit';
+  let pdfBuffer;
+  try {
+    const imageBuffers = await loadImageBuffers(source);
+    const doc = buildPdfDocument(source, imageBuffers);
+    pdfBuffer = await streamToBuffer(doc);
+  } catch (error) {
+    renderer = 'fallback';
+    console.error('PDFKIT_EXPORT_FAILED_FALLBACK_USED', error && (error.stack || error.message) || error);
+    pdfBuffer = createFallbackPdfBuffer(source);
+  }
   const stamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
   const result = await cloud.uploadFile({
     cloudPath: `exports/coffee-sop-${stamp}.pdf`,
@@ -1029,7 +1215,8 @@ async function exportPdf(drinks) {
   });
   return {
     fileID: result.fileID,
-    count: source.length
+    count: source.length,
+    renderer
   };
 }
 
