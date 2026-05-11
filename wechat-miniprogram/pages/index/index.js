@@ -102,7 +102,14 @@ Page({
 
   onLoad: function () {
     this.loadLocal();
-    this.refreshCloud();
+    this.setStatus('local');
+  },
+
+  onReady: function () {
+    var page = this;
+    setTimeout(function () {
+      page.refreshCloud();
+    }, 1200);
   },
 
   onPullDownRefresh: function () {
@@ -118,7 +125,12 @@ Page({
   },
 
   loadLocal: function () {
-    var saved = wx.getStorageSync(STORAGE_KEY);
+    var saved = null;
+    try {
+      saved = wx.getStorageSync(STORAGE_KEY);
+    } catch (error) {
+      console.warn('本机缓存读取失败，使用内置 SOP。', error);
+    }
     var drinks = normalizeData(saved || cloneDrinks());
     var openMap = {};
     drinks.forEach(function (drink) {
@@ -129,7 +141,11 @@ Page({
   },
 
   persistLocal: function (drinks) {
-    wx.setStorageSync(STORAGE_KEY, normalizeData(drinks));
+    try {
+      wx.setStorageSync(STORAGE_KEY, normalizeData(drinks));
+    } catch (error) {
+      console.warn('本机缓存保存失败。', error);
+    }
   },
 
   setStatus: function (name) {
