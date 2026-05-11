@@ -40,7 +40,7 @@ function normalizeDrink(item, index) {
     id,
     sort: Number(item && item.sort) || id,
     emoji: item && item.emoji ? String(item.emoji) : '☕',
-    name: item && item.name ? String(item.name) : `饮品 ${index + 1}`,
+    name: item && item.name ? String(item.name) : '饮品 ' + (index + 1),
     price: item && item.price ? String(item.price) : '¥--',
     img: item && item.img ? String(item.img) : '',
     ingredients: Array.isArray(item && item.ingredients)
@@ -90,7 +90,11 @@ Page({
   },
 
   onPullDownRefresh() {
-    this.refreshCloud().finally(() => wx.stopPullDownRefresh());
+    this.refreshCloud().then(() => {
+      wx.stopPullDownRefresh();
+    }).catch(() => {
+      wx.stopPullDownRefresh();
+    });
   },
 
   onShareAppMessage() {
@@ -122,37 +126,40 @@ Page({
     const visibleDrinks = this.data.drinks
       .filter(drink => {
         if (!query) return true;
-        const haystack = [
-          drink.name,
-          drink.price,
-          ...(drink.ingredients || []).map(item => `${item.name} ${item.amount}`),
-          ...(drink.steps || []),
-          ...(drink.notes || [])
-        ].join(' ').toLowerCase();
+        const haystack = [drink.name, drink.price]
+          .concat((drink.ingredients || []).map(item => String(item.name || '') + ' ' + String(item.amount || '')))
+          .concat(drink.steps || [])
+          .concat(drink.notes || [])
+          .join(' ')
+          .toLowerCase();
         return haystack.includes(query);
       })
-      .map(drink => ({
-        ...drink,
-        open: !!this.data.openMap[drink.id],
-        hasNotes: Array.isArray(drink.notes) && drink.notes.length > 0
-      }));
+      .map(drink => {
+        const viewDrink = {};
+        Object.keys(drink).forEach(key => {
+          viewDrink[key] = drink[key];
+        });
+        viewDrink.open = !!this.data.openMap[drink.id];
+        viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
+        return viewDrink;
+      });
     this.setData({ visibleDrinks });
   },
 
-  async refreshCloud() {
+  refreshCloud() {
     const app = getApp();
     if (!app.globalData.cloudReady) {
       this.setStatus('local');
-      return;
+      return Promise.resolve();
     }
 
     this.setData({ loading: true });
     this.setStatus('loading');
-    try {
-      const result = await wx.cloud.callFunction({
+    return wx.cloud.callFunction({
         name: 'sopApi',
         data: { action: 'list' }
-      });
+      })
+      .then(result => {
       const drinks = normalizeData(result && result.result && result.result.drinks);
       if (!drinks.length) throw new Error('empty cloud result');
       const openMap = {};
@@ -161,14 +168,16 @@ Page({
       this.setData({ drinks, openMap, dirty: false, loading: false });
       this.setStatus('synced');
       this.updateVisible();
-    } catch (error) {
+      })
+      .catch(error => {
+      console.warn('云端读取失败', error);
       this.setData({ loading: false });
       this.setStatus(this.data.drinks.length ? 'local' : 'error');
       wx.showToast({ title: '云端读取失败', icon: 'none' });
-    }
+      });
   },
 
-  async saveCloud() {
+  saveCloud() {
     const app = getApp();
     if (!app.globalData.cloudReady) {
       wx.showToast({ title: '请先开通云开发', icon: 'none' });
@@ -178,21 +187,23 @@ Page({
     const drinks = normalizeData(this.data.drinks);
     this.setData({ loading: true });
     this.setStatus('loading');
-    try {
-      await wx.cloud.callFunction({
+    return wx.cloud.callFunction({
         name: 'sopApi',
         data: { action: 'saveAll', drinks }
-      });
+      })
+      .then(() => {
       this.persistLocal(drinks);
       this.setData({ drinks, dirty: false, loading: false });
       this.setStatus('synced');
       this.updateVisible();
       wx.showToast({ title: '已保存云端', icon: 'success' });
-    } catch (error) {
+      })
+      .catch(error => {
+      console.warn('云端保存失败', error);
       this.setData({ loading: false });
       this.setStatus('error');
       wx.showToast({ title: '保存失败', icon: 'none' });
-    }
+      });
   },
 
   markDirty(drinks) {
@@ -220,7 +231,8 @@ Page({
 
   toggleCard(event) {
     const id = Number(event.currentTarget.dataset.id);
-    const openMap = { ...this.data.openMap, [id]: !this.data.openMap[id] };
+    const openMap = Object.assign({}, this.data.openMap);
+    openMap[id] = !this.data.openMap[id];
     this.setData({ openMap });
     this.updateVisible();
   },
@@ -288,7 +300,8 @@ Page({
       steps: [''],
       notes: []
     });
-    const openMap = { ...this.data.openMap, [nextId]: true };
+    const openMap = Object.assign({}, this.data.openMap);
+    openMap[nextId] = true;
     this.setData({ openMap, editMode: true });
     this.markDirty(drinks);
   },
@@ -302,7 +315,7 @@ Page({
       success: res => {
         if (!res.confirm) return;
         const drinks = this.data.drinks.filter(drink => drink.id !== id);
-        const openMap = { ...this.data.openMap };
+        const openMap = Object.assign({}, this.data.openMap);
         delete openMap[id];
         this.setData({ openMap });
         this.markDirty(drinks);
