@@ -39,7 +39,8 @@
     <block wx:for="{{visibleDrinks}}" wx:for-item="drink" wx:key="id">
       <view class="card">
         <view class="card-head" data-id="{{drink.id}}" bindtap="toggleCard">
-          <view class="drink-emoji">{{drink.emoji}}</view>
+          <image wx:if="{{drink.hasImage}}" class="drink-icon-photo" src="{{drink.img}}" mode="aspectFill" data-src="{{drink.img}}" catchtap="previewDrinkImage" />
+          <view wx:if="{{drink.noImage}}" class="drink-emoji">{{drink.emoji}}</view>
           <view class="drink-main">
             <view wx:if="{{viewMode}}" class="drink-name">{{drink.name}}</view>
             <input wx:if="{{editMode}}" class="edit-title" value="{{drink.name}}" data-id="{{drink.id}}" data-field="name" bindinput="updateDrinkField" />
@@ -50,14 +51,13 @@
         </view>
 
         <view wx:if="{{drink.open}}" class="card-body">
-          <image wx:if="{{drink.img}}" class="drink-photo" src="{{drink.img}}" mode="aspectFill" data-src="{{drink.img}}" bindtap="previewDrinkImage" />
           <view wx:if="{{editMode}}" class="image-tools">
-            <button class="image-btn" size="mini" data-id="{{drink.id}}" bindtap="chooseDrinkImage">上传/更换图片</button>
-            <button wx:if="{{drink.img}}" class="image-btn danger" size="mini" data-id="{{drink.id}}" bindtap="removeDrinkImage">删除图片</button>
+            <button class="image-btn" size="mini" data-id="{{drink.id}}" bindtap="chooseDrinkImage">上传/更换头像照片</button>
+            <button wx:if="{{drink.hasImage}}" class="image-btn danger" size="mini" data-id="{{drink.id}}" bindtap="removeDrinkImage">删除头像</button>
           </view>
 
           <view wx:if="{{editMode}}" class="emoji-edit">
-            <text>图标</text>
+            <text>备用emoji</text>
             <input value="{{drink.emoji}}" data-id="{{drink.id}}" data-field="emoji" bindinput="updateDrinkField" />
             <button class="danger ghost" size="mini" data-id="{{drink.id}}" bindtap="deleteDrink">删除饮品</button>
           </view>

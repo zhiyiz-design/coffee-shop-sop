@@ -155,78 +155,121 @@ function pdfLine(x1, y1, x2, y2) {
   return `0.82 0.82 0.82 RG ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S\n`;
 }
 
+function pdfRect(x, y, width, height, color) {
+  return `${color} rg ${x.toFixed(2)} ${y.toFixed(2)} ${width.toFixed(2)} ${height.toFixed(2)} re f\n`;
+}
+
 function pdfHeader(pageNumber) {
-  let content = '0.14 0.38 0.23 rg 0 796 595.28 45 re f\n';
-  content += pdfText('咖啡店 SOP 标准操作手册', MARGIN, 814, 15, '1 1 1');
-  content += pdfText('第 ' + pageNumber + ' 页', PAGE_WIDTH - 82, 814, 9, '1 1 1');
+  let content = pdfRect(0, 792, PAGE_WIDTH, 50, '0.14 0.38 0.23');
+  content += pdfText('咖啡店 SOP 标准操作手册', MARGIN, 812, 16, '1 1 1');
+  content += pdfText('第 ' + pageNumber + ' 页', PAGE_WIDTH - 86, 812, 10, '1 1 1');
   return content;
 }
 
 function buildPdfPages(drinks) {
   const pages = [];
-  let pageNumber = 1;
-  let content = pdfHeader(pageNumber);
-  let y = 768;
+  const source = normalizeData(drinks);
+  let pageNumber = 0;
+  let content = '';
+  let y = 0;
+  let currentDrink = '';
 
-  function newPage() {
-    pages.push(content);
+  function startPage(label) {
+    if (content) pages.push(content);
     pageNumber += 1;
     content = pdfHeader(pageNumber);
-    y = 768;
+    y = 758;
+    if (label) {
+      content += pdfText(label, MARGIN, y, 12, '0.35 0.38 0.35');
+      y -= 24;
+    }
   }
 
   function ensureSpace(height) {
-    if (y - height < MARGIN) newPage();
+    if (y - height < 52) startPage(currentDrink + '（续）');
   }
 
-  function addWrapped(text, x, fontSize, maxWidth, options = {}) {
-    const lines = wrapText(text, fontSize, maxWidth);
-    const lineHeight = options.lineHeight || fontSize + 4;
-    ensureSpace(lines.length * lineHeight + 4);
-    lines.forEach(line => {
-      content += pdfText(line, x, y, fontSize);
-      y -= lineHeight;
-    });
+  function addSectionTitle(title) {
+    ensureSpace(34);
+    content += pdfText(title, MARGIN, y, 15, '0.14 0.38 0.23');
+    y -= 18;
+    content += pdfLine(MARGIN, y, PAGE_WIDTH - MARGIN, y);
+    y -= 18;
   }
 
-  content += pdfText('导出时间：' + new Date().toISOString().slice(0, 10), MARGIN, y, 10, '0.32 0.34 0.32');
-  y -= 28;
-
-  normalizeData(drinks).forEach((drink, drinkIndex) => {
-    ensureSpace(120);
-    content += '0.93 0.97 0.94 rg ' + MARGIN + ' ' + (y - 8).toFixed(2) + ' ' + (PAGE_WIDTH - MARGIN * 2) + ' 28 re f\n';
-    content += pdfText((drinkIndex + 1) + '. ' + drink.name + '    ' + drink.price, MARGIN + 10, y, 14, '0.10 0.26 0.16');
-    y -= 32;
-
-    content += pdfText('原料配方', MARGIN, y, 12, '0.40 0.43 0.40');
-    y -= 19;
-    (drink.ingredients || []).forEach(ingredient => {
-      const amount = ingredient.amount ? ': ' + ingredient.amount : '';
-      addWrapped('- ' + ingredient.name + amount, MARGIN + 12, 11, PAGE_WIDTH - MARGIN * 2 - 12, { lineHeight: 16 });
-    });
-
-    y -= 4;
-    content += pdfText('制作步骤', MARGIN, y, 12, '0.40 0.43 0.40');
-    y -= 19;
-    (drink.steps || []).forEach((step, index) => {
-      addWrapped((index + 1) + '. ' + step, MARGIN + 12, 11, PAGE_WIDTH - MARGIN * 2 - 12, { lineHeight: 16 });
-    });
-
-    if ((drink.notes || []).length) {
-      y -= 4;
-      content += pdfText('注意事项', MARGIN, y, 12, '0.40 0.43 0.40');
-      y -= 19;
-      (drink.notes || []).forEach(note => {
-        addWrapped('注意: ' + note, MARGIN + 12, 11, PAGE_WIDTH - MARGIN * 2 - 12, { lineHeight: 16 });
-      });
+  function addIngredient(ingredient, rowIndex) {
+    const name = ingredient.name || '';
+    const amount = ingredient.amount || '';
+    const rowHeight = 31;
+    ensureSpace(rowHeight + 2);
+    if (rowIndex % 2 === 0) {
+      content += pdfRect(MARGIN, y - 21, PAGE_WIDTH - MARGIN * 2, rowHeight, '0.97 0.98 0.96');
     }
+    content += pdfText(name, MARGIN + 12, y - 3, 12.5, '0.12 0.16 0.13');
+    if (amount) {
+      content += pdfText(amount, PAGE_WIDTH - MARGIN - 118, y - 3, 12.5, '0.14 0.38 0.23');
+    }
+    y -= rowHeight;
+  }
+
+  function addStep(step, index) {
+    const lines = wrapText(step, 13, PAGE_WIDTH - MARGIN * 2 - 58);
+    const rowHeight = Math.max(46, lines.length * 18 + 16);
+    ensureSpace(rowHeight + 4);
+    content += pdfRect(MARGIN, y - rowHeight + 8, 34, 34, '0.14 0.38 0.23');
+    content += pdfText(String(index + 1), MARGIN + 11, y - 14, 14, '1 1 1');
+    lines.forEach((line, lineIndex) => {
+      content += pdfText(line, MARGIN + 52, y - 10 - lineIndex * 18, 13, '0.12 0.16 0.13');
+    });
+    y -= rowHeight;
+  }
+
+  function addNote(note) {
+    const lines = wrapText(note, 12.5, PAGE_WIDTH - MARGIN * 2 - 30);
+    const boxHeight = Math.max(38, lines.length * 18 + 18);
+    ensureSpace(boxHeight + 6);
+    content += pdfRect(MARGIN, y - boxHeight + 8, PAGE_WIDTH - MARGIN * 2, boxHeight, '1 0.96 0.87');
+    content += pdfRect(MARGIN, y - boxHeight + 8, 7, boxHeight, '0.78 0.47 0.12');
+    content += pdfText('注意：', MARGIN + 16, y - 14, 12.5, '0.42 0.29 0.08');
+    lines.forEach((line, lineIndex) => {
+      content += pdfText(line, MARGIN + 58, y - 14 - lineIndex * 18, 12.5, '0.42 0.29 0.08');
+    });
+    y -= boxHeight + 4;
+  }
+
+  source.forEach((drink, drinkIndex) => {
+    currentDrink = drink.name;
+    startPage('');
+
+    content += pdfText('导出时间：' + new Date().toISOString().slice(0, 10), MARGIN, y, 10.5, '0.42 0.45 0.42');
+    y -= 30;
+    content += pdfRect(MARGIN, y - 70, PAGE_WIDTH - MARGIN * 2, 76, '0.93 0.97 0.94');
+    content += pdfRect(MARGIN, y - 70, 58, 76, '0.14 0.38 0.23');
+    content += pdfText(String(drinkIndex + 1).padStart(2, '0'), MARGIN + 14, y - 27, 21, '1 1 1');
+    content += pdfText(drink.name, MARGIN + 76, y - 12, 22, '0.08 0.18 0.11');
+    content += pdfText(drink.price, MARGIN + 78, y - 43, 16, '0.56 0.35 0.08');
+    y -= 104;
+
+    addSectionTitle('原料配方');
+    (drink.ingredients || []).forEach(addIngredient);
 
     y -= 12;
-    content += pdfLine(MARGIN, y, PAGE_WIDTH - MARGIN, y);
-    y -= 20;
+    addSectionTitle('制作步骤');
+    (drink.steps || []).forEach(addStep);
+
+    if ((drink.notes || []).length) {
+      y -= 12;
+      addSectionTitle('注意事项');
+      (drink.notes || []).forEach(addNote);
+    }
   });
 
-  pages.push(content);
+  if (content) pages.push(content);
+  if (!pages.length) {
+    startPage('');
+    content += pdfText('暂无 SOP 数据', MARGIN, y, 18, '0.14 0.38 0.23');
+    pages.push(content);
+  }
   return pages;
 }
 

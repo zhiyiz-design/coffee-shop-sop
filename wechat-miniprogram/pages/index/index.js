@@ -189,6 +189,8 @@ Page({
       });
       viewDrink.open = !!openMap[drink.id];
       viewDrink.actionText = viewDrink.open ? '收起' : '展开';
+      viewDrink.hasImage = !!drink.img;
+      viewDrink.noImage = !drink.img;
       viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
       viewDrink.showNotes = viewDrink.hasNotes || editMode;
       viewDrink.ingredientViews = (drink.ingredients || []).map(function (ingredient, index) {
