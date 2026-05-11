@@ -4,9 +4,9 @@
   ],
   "window": {
     "navigationBarTitleText": "咖啡店 SOP",
-    "navigationBarBackgroundColor": "#23613A",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#F6F4EF"
+    "navigationBarBackgroundColor": "#B8D8C6",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#B8D8C6"
   },
   "sitemapLocation": "sitemap.json"
 }

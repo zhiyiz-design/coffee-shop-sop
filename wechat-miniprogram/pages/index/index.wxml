@@ -35,6 +35,8 @@
     </view>
   </view>
 
+  <view class="menu-title">Coffee Menu:</view>
+
   <view class="list">
     <block wx:for="{{visibleDrinks}}" wx:for-item="drink" wx:key="id">
       <view class="card">
