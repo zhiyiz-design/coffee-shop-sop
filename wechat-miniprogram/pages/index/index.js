@@ -1,7 +1,8 @@
-const { cloneDrinks } = require('../../data/default-drinks');
+var defaultData = require('../../data/default-drinks');
+var cloneDrinks = defaultData.cloneDrinks;
 
-const STORAGE_KEY = 'coffee_sop_miniprogram';
-const STATUS = {
+var STORAGE_KEY = 'coffee_sop_miniprogram';
+var STATUS = {
   loading: {
     chip: '同步中',
     cls: 'sync',
@@ -35,41 +36,56 @@ const STATUS = {
 };
 
 function normalizeDrink(item, index) {
-  const id = Number(item && item.id) || index + 1;
+  var id = Number(item && item.id) || index + 1;
   return {
-    id,
+    id: id,
     sort: Number(item && item.sort) || id,
     emoji: item && item.emoji ? String(item.emoji) : '☕',
     name: item && item.name ? String(item.name) : '饮品 ' + (index + 1),
     price: item && item.price ? String(item.price) : '¥--',
     img: item && item.img ? String(item.img) : '',
     ingredients: Array.isArray(item && item.ingredients)
-      ? item.ingredients.map(ing => ({
-        name: String(ing && ing.name || ''),
-        amount: String(ing && ing.amount || '')
-      }))
+      ? item.ingredients.map(function (ing) {
+        return {
+          name: String(ing && ing.name || ''),
+          amount: String(ing && ing.amount || '')
+        };
+      })
       : [{ name: '', amount: '' }],
     steps: Array.isArray(item && item.steps)
-      ? item.steps.map(step => String(step || ''))
+      ? item.steps.map(function (step) { return String(step || ''); })
       : [''],
     notes: Array.isArray(item && item.notes)
-      ? item.notes.map(note => String(note || ''))
+      ? item.notes.map(function (note) { return String(note || ''); })
       : []
   };
 }
 
 function normalizeData(source) {
-  const list = Array.isArray(source) ? source : [];
-  return list
-    .map(normalizeDrink)
-    .sort((left, right) => {
-      if (left.sort === right.sort) return left.id - right.id;
-      return left.sort - right.sort;
-    });
+  var list = Array.isArray(source) ? source : [];
+  return list.map(normalizeDrink).sort(function (left, right) {
+    if (left.sort === right.sort) return left.id - right.id;
+    return left.sort - right.sort;
+  });
 }
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function copyMap(source) {
+  var target = {};
+  Object.keys(source || {}).forEach(function (key) {
+    target[key] = source[key];
+  });
+  return target;
+}
+
+function findDrink(drinks, id) {
+  for (var index = 0; index < drinks.length; index += 1) {
+    if (drinks[index].id === id) return drinks[index];
+  }
+  return null;
 }
 
 Page({
@@ -84,258 +100,289 @@ Page({
     status: STATUS.loading
   },
 
-  onLoad() {
+  onLoad: function () {
     this.loadLocal();
     this.refreshCloud();
   },
 
-  onPullDownRefresh() {
-    this.refreshCloud().then(() => {
-      wx.stopPullDownRefresh();
-    }).catch(() => {
-      wx.stopPullDownRefresh();
-    });
+  onPullDownRefresh: function () {
+    this.refreshCloud();
+    wx.stopPullDownRefresh();
   },
 
-  onShareAppMessage() {
+  onShareAppMessage: function () {
     return {
       title: '咖啡店 SOP',
       path: '/pages/index/index'
     };
   },
 
-  loadLocal() {
-    const saved = wx.getStorageSync(STORAGE_KEY);
-    const drinks = normalizeData(saved || cloneDrinks());
-    const openMap = {};
-    drinks.forEach(drink => { openMap[drink.id] = true; });
-    this.setData({ drinks, openMap });
+  loadLocal: function () {
+    var saved = wx.getStorageSync(STORAGE_KEY);
+    var drinks = normalizeData(saved || cloneDrinks());
+    var openMap = {};
+    drinks.forEach(function (drink) {
+      openMap[drink.id] = true;
+    });
+    this.setData({ drinks: drinks, openMap: openMap });
     this.updateVisible();
   },
 
-  persistLocal(drinks) {
+  persistLocal: function (drinks) {
     wx.setStorageSync(STORAGE_KEY, normalizeData(drinks));
   },
 
-  setStatus(name) {
+  setStatus: function (name) {
     this.setData({ status: STATUS[name] || STATUS.local });
   },
 
-  updateVisible() {
-    const query = String(this.data.query || '').trim().toLowerCase();
-    const visibleDrinks = this.data.drinks
-      .filter(drink => {
-        if (!query) return true;
-        const haystack = [drink.name, drink.price]
-          .concat((drink.ingredients || []).map(item => String(item.name || '') + ' ' + String(item.amount || '')))
-          .concat(drink.steps || [])
-          .concat(drink.notes || [])
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(query);
-      })
-      .map(drink => {
-        const viewDrink = {};
-        Object.keys(drink).forEach(key => {
-          viewDrink[key] = drink[key];
-        });
-        viewDrink.open = !!this.data.openMap[drink.id];
-        viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
-        return viewDrink;
+  updateVisible: function () {
+    var query = String(this.data.query || '').trim().toLowerCase();
+    var openMap = this.data.openMap;
+    var visibleDrinks = this.data.drinks.filter(function (drink) {
+      if (!query) return true;
+      var haystack = [drink.name, drink.price]
+        .concat((drink.ingredients || []).map(function (item) {
+          return String(item.name || '') + ' ' + String(item.amount || '');
+        }))
+        .concat(drink.steps || [])
+        .concat(drink.notes || [])
+        .join(' ')
+        .toLowerCase();
+      return haystack.indexOf(query) !== -1;
+    }).map(function (drink) {
+      var viewDrink = {};
+      Object.keys(drink).forEach(function (key) {
+        viewDrink[key] = drink[key];
       });
-    this.setData({ visibleDrinks });
+      viewDrink.open = !!openMap[drink.id];
+      viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
+      return viewDrink;
+    });
+    this.setData({ visibleDrinks: visibleDrinks });
   },
 
-  refreshCloud() {
-    const app = getApp();
+  refreshCloud: function () {
+    var app = getApp();
+    var page = this;
     if (!app.globalData.cloudReady) {
-      this.setStatus('local');
-      return Promise.resolve();
+      page.setStatus('local');
+      return;
     }
 
-    this.setData({ loading: true });
-    this.setStatus('loading');
-    return wx.cloud.callFunction({
-        name: 'sopApi',
-        data: { action: 'list' }
-      })
-      .then(result => {
-      const drinks = normalizeData(result && result.result && result.result.drinks);
-      if (!drinks.length) throw new Error('empty cloud result');
-      const openMap = {};
-      drinks.forEach(drink => { openMap[drink.id] = true; });
-      this.persistLocal(drinks);
-      this.setData({ drinks, openMap, dirty: false, loading: false });
-      this.setStatus('synced');
-      this.updateVisible();
-      })
-      .catch(error => {
-      console.warn('云端读取失败', error);
-      this.setData({ loading: false });
-      this.setStatus(this.data.drinks.length ? 'local' : 'error');
-      wx.showToast({ title: '云端读取失败', icon: 'none' });
-      });
+    page.setData({ loading: true });
+    page.setStatus('loading');
+    wx.cloud.callFunction({
+      name: 'sopApi',
+      data: { action: 'list' },
+      success: function (result) {
+        var drinks = normalizeData(result && result.result && result.result.drinks);
+        if (!drinks.length) {
+          page.setStatus('error');
+          wx.showToast({ title: '云端无数据', icon: 'none' });
+          return;
+        }
+        var openMap = {};
+        drinks.forEach(function (drink) {
+          openMap[drink.id] = true;
+        });
+        page.persistLocal(drinks);
+        page.setData({
+          drinks: drinks,
+          openMap: openMap,
+          dirty: false,
+          loading: false
+        });
+        page.setStatus('synced');
+        page.updateVisible();
+      },
+      fail: function (error) {
+        console.warn('云端读取失败', error);
+        page.setStatus(page.data.drinks.length ? 'local' : 'error');
+        wx.showToast({ title: '云端读取失败', icon: 'none' });
+      },
+      complete: function () {
+        page.setData({ loading: false });
+      }
+    });
   },
 
-  saveCloud() {
-    const app = getApp();
+  saveCloud: function () {
+    var app = getApp();
+    var page = this;
     if (!app.globalData.cloudReady) {
       wx.showToast({ title: '请先开通云开发', icon: 'none' });
       return;
     }
 
-    const drinks = normalizeData(this.data.drinks);
-    this.setData({ loading: true });
-    this.setStatus('loading');
-    return wx.cloud.callFunction({
-        name: 'sopApi',
-        data: { action: 'saveAll', drinks }
-      })
-      .then(() => {
-      this.persistLocal(drinks);
-      this.setData({ drinks, dirty: false, loading: false });
-      this.setStatus('synced');
-      this.updateVisible();
-      wx.showToast({ title: '已保存云端', icon: 'success' });
-      })
-      .catch(error => {
-      console.warn('云端保存失败', error);
-      this.setData({ loading: false });
-      this.setStatus('error');
-      wx.showToast({ title: '保存失败', icon: 'none' });
-      });
+    var drinks = normalizeData(page.data.drinks);
+    page.setData({ loading: true });
+    page.setStatus('loading');
+    wx.cloud.callFunction({
+      name: 'sopApi',
+      data: { action: 'saveAll', drinks: drinks },
+      success: function () {
+        page.persistLocal(drinks);
+        page.setData({ drinks: drinks, dirty: false });
+        page.setStatus('synced');
+        page.updateVisible();
+        wx.showToast({ title: '已保存云端', icon: 'success' });
+      },
+      fail: function (error) {
+        console.warn('云端保存失败', error);
+        page.setStatus('error');
+        wx.showToast({ title: '保存失败', icon: 'none' });
+      },
+      complete: function () {
+        page.setData({ loading: false });
+      }
+    });
   },
 
-  exportPdf() {
-    const app = getApp();
+  exportPdf: function () {
+    var app = getApp();
+    var page = this;
     if (!app.globalData.cloudReady) {
       wx.showToast({ title: '请先连接云端', icon: 'none' });
       return;
     }
 
-    const drinks = normalizeData(this.data.drinks);
-    this.setData({ loading: true });
+    var drinks = normalizeData(page.data.drinks);
+    page.setData({ loading: true });
     wx.showLoading({ title: '生成PDF中' });
     wx.cloud.callFunction({
       name: 'sopApi',
       data: {
         action: 'exportPdf',
-        drinks
-      }
-    })
-      .then(result => {
-        const fileID = result && result.result && result.result.fileID;
-        if (!fileID) throw new Error('missing fileID');
-        return wx.cloud.downloadFile({ fileID });
-      })
-      .then(result => {
-        if (!result || !result.tempFilePath) throw new Error('missing temp file');
-        return new Promise((resolve, reject) => {
-          wx.openDocument({
-            filePath: result.tempFilePath,
-            fileType: 'pdf',
-            showMenu: true,
-            success: resolve,
-            fail: reject
-          });
+        drinks: drinks
+      },
+      success: function (result) {
+        var fileID = result && result.result && result.result.fileID;
+        if (!fileID) {
+          wx.hideLoading();
+          page.setData({ loading: false });
+          wx.showToast({ title: 'PDF生成失败', icon: 'none' });
+          return;
+        }
+        wx.cloud.downloadFile({
+          fileID: fileID,
+          success: function (downloadResult) {
+            wx.openDocument({
+              filePath: downloadResult.tempFilePath,
+              fileType: 'pdf',
+              showMenu: true,
+              fail: function (error) {
+                console.warn('PDF打开失败', error);
+                wx.showToast({ title: 'PDF打开失败', icon: 'none' });
+              }
+            });
+          },
+          fail: function (error) {
+            console.warn('PDF下载失败', error);
+            wx.showToast({ title: 'PDF下载失败', icon: 'none' });
+          },
+          complete: function () {
+            wx.hideLoading();
+            page.setData({ loading: false });
+          }
         });
-      })
-      .then(() => {
-        wx.showToast({ title: 'PDF已打开', icon: 'success' });
-      })
-      .catch(error => {
+      },
+      fail: function (error) {
         console.warn('PDF导出失败', error);
-        wx.showToast({ title: 'PDF导出失败', icon: 'none' });
-      })
-      .then(() => {
         wx.hideLoading();
-        this.setData({ loading: false });
-      });
+        page.setData({ loading: false });
+        wx.showToast({ title: 'PDF导出失败', icon: 'none' });
+      }
+    });
   },
 
-  markDirty(drinks) {
-    const normalized = normalizeData(drinks);
+  markDirty: function (drinks) {
+    var normalized = normalizeData(drinks);
     this.persistLocal(normalized);
     this.setData({ drinks: normalized, dirty: true });
     this.setStatus('dirty');
     this.updateVisible();
   },
 
-  onSearch(event) {
+  onSearch: function (event) {
     this.setData({ query: event.detail.value || '' });
     this.updateVisible();
   },
 
-  clearSearch() {
+  clearSearch: function () {
     this.setData({ query: '' });
     this.updateVisible();
   },
 
-  toggleEdit() {
+  toggleEdit: function () {
     this.setData({ editMode: !this.data.editMode });
     this.updateVisible();
   },
 
-  toggleCard(event) {
-    const id = Number(event.currentTarget.dataset.id);
-    const openMap = Object.assign({}, this.data.openMap);
+  toggleCard: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var openMap = copyMap(this.data.openMap);
     openMap[id] = !this.data.openMap[id];
-    this.setData({ openMap });
+    this.setData({ openMap: openMap });
     this.updateVisible();
   },
 
-  expandAll() {
-    const openMap = {};
-    this.data.drinks.forEach(drink => { openMap[drink.id] = true; });
-    this.setData({ openMap });
+  expandAll: function () {
+    var openMap = {};
+    this.data.drinks.forEach(function (drink) {
+      openMap[drink.id] = true;
+    });
+    this.setData({ openMap: openMap });
     this.updateVisible();
   },
 
-  updateDrinkField(event) {
-    const id = Number(event.currentTarget.dataset.id);
-    const field = event.currentTarget.dataset.field;
-    const value = event.detail.value;
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
-    if (!drink || !['emoji', 'name', 'price'].includes(field)) return;
+  updateDrinkField: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var field = event.currentTarget.dataset.field;
+    var value = event.detail.value;
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
+    if (!drink || ['emoji', 'name', 'price'].indexOf(field) === -1) return;
     drink[field] = value;
     this.markDirty(drinks);
   },
 
-  updateIngredient(event) {
-    const id = Number(event.currentTarget.dataset.id);
-    const index = Number(event.currentTarget.dataset.index);
-    const field = event.currentTarget.dataset.field;
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
-    if (!drink || !drink.ingredients[index] || !['name', 'amount'].includes(field)) return;
+  updateIngredient: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var index = Number(event.currentTarget.dataset.index);
+    var field = event.currentTarget.dataset.field;
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
+    if (!drink || !drink.ingredients[index] || ['name', 'amount'].indexOf(field) === -1) return;
     drink.ingredients[index][field] = event.detail.value;
     this.markDirty(drinks);
   },
 
-  updateStep(event) {
-    const id = Number(event.currentTarget.dataset.id);
-    const index = Number(event.currentTarget.dataset.index);
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
-    if (!drink || !drink.steps[index] && drink.steps[index] !== '') return;
+  updateStep: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var index = Number(event.currentTarget.dataset.index);
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
+    if (!drink || (!drink.steps[index] && drink.steps[index] !== '')) return;
     drink.steps[index] = event.detail.value;
     this.markDirty(drinks);
   },
 
-  updateNote(event) {
-    const id = Number(event.currentTarget.dataset.id);
-    const index = Number(event.currentTarget.dataset.index);
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
-    if (!drink || !drink.notes[index] && drink.notes[index] !== '') return;
+  updateNote: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var index = Number(event.currentTarget.dataset.index);
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
+    if (!drink || (!drink.notes[index] && drink.notes[index] !== '')) return;
     drink.notes[index] = event.detail.value;
     this.markDirty(drinks);
   },
 
-  addDrink() {
-    const nextId = this.data.drinks.reduce((max, drink) => Math.max(max, Number(drink.id) || 0), 0) + 1;
-    const drinks = clone(this.data.drinks);
+  addDrink: function () {
+    var nextId = this.data.drinks.reduce(function (max, drink) {
+      return Math.max(max, Number(drink.id) || 0);
+    }, 0) + 1;
+    var drinks = clone(this.data.drinks);
     drinks.push({
       id: nextId,
       sort: nextId,
@@ -347,88 +394,96 @@ Page({
       steps: [''],
       notes: []
     });
-    const openMap = Object.assign({}, this.data.openMap);
+    var openMap = copyMap(this.data.openMap);
     openMap[nextId] = true;
-    this.setData({ openMap, editMode: true });
+    this.setData({ openMap: openMap, editMode: true });
     this.markDirty(drinks);
   },
 
-  deleteDrink(event) {
-    const id = Number(event.currentTarget.dataset.id);
+  deleteDrink: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var page = this;
     wx.showModal({
       title: '删除饮品',
       content: '确认删除这款 SOP 吗？',
       confirmColor: '#b42318',
-      success: res => {
+      success: function (res) {
         if (!res.confirm) return;
-        const drinks = this.data.drinks.filter(drink => drink.id !== id);
-        const openMap = Object.assign({}, this.data.openMap);
+        var drinks = page.data.drinks.filter(function (drink) {
+          return drink.id !== id;
+        });
+        var openMap = copyMap(page.data.openMap);
         delete openMap[id];
-        this.setData({ openMap });
-        this.markDirty(drinks);
+        page.setData({ openMap: openMap });
+        page.markDirty(drinks);
       }
     });
   },
 
-  addIngredient(event) {
+  addIngredient: function (event) {
     this.addListItem(event, 'ingredients', { name: '', amount: '' });
   },
 
-  removeIngredient(event) {
+  removeIngredient: function (event) {
     this.removeListItem(event, 'ingredients');
   },
 
-  addStep(event) {
+  addStep: function (event) {
     this.addListItem(event, 'steps', '');
   },
 
-  removeStep(event) {
+  removeStep: function (event) {
     this.removeListItem(event, 'steps');
   },
 
-  addNote(event) {
+  addNote: function (event) {
     this.addListItem(event, 'notes', '');
   },
 
-  removeNote(event) {
+  removeNote: function (event) {
     this.removeListItem(event, 'notes');
   },
 
-  addListItem(event, field, value) {
-    const id = Number(event.currentTarget.dataset.id);
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
+  addListItem: function (event, field, value) {
+    var id = Number(event.currentTarget.dataset.id);
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
     if (!drink) return;
     if (!Array.isArray(drink[field])) drink[field] = [];
     drink[field].push(value);
     this.markDirty(drinks);
   },
 
-  removeListItem(event, field) {
-    const id = Number(event.currentTarget.dataset.id);
-    const index = Number(event.currentTarget.dataset.index);
-    const drinks = clone(this.data.drinks);
-    const drink = drinks.find(item => item.id === id);
+  removeListItem: function (event, field) {
+    var id = Number(event.currentTarget.dataset.id);
+    var index = Number(event.currentTarget.dataset.index);
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
     if (!drink || !Array.isArray(drink[field])) return;
     drink[field].splice(index, 1);
-    if (!drink[field].length && field !== 'notes') drink[field].push(field === 'ingredients' ? { name: '', amount: '' } : '');
+    if (!drink[field].length && field !== 'notes') {
+      drink[field].push(field === 'ingredients' ? { name: '', amount: '' } : '');
+    }
     this.markDirty(drinks);
   },
 
-  exportBackup() {
+  exportBackup: function () {
     wx.setClipboardData({
       data: JSON.stringify(normalizeData(this.data.drinks), null, 2),
-      success: () => wx.showToast({ title: '已复制备份', icon: 'success' })
+      success: function () {
+        wx.showToast({ title: '已复制备份', icon: 'success' });
+      }
     });
   },
 
-  importBackup() {
+  importBackup: function () {
+    var page = this;
     wx.getClipboardData({
-      success: res => {
+      success: function (res) {
         try {
-          const drinks = normalizeData(JSON.parse(res.data));
+          var drinks = normalizeData(JSON.parse(res.data));
           if (!drinks.length) throw new Error('empty backup');
-          this.markDirty(drinks);
+          page.markDirty(drinks);
           wx.showToast({ title: '已导入本机', icon: 'success' });
         } catch (error) {
           wx.showToast({ title: '剪贴板不是备份', icon: 'none' });
@@ -437,14 +492,15 @@ Page({
     });
   },
 
-  resetDefault() {
+  resetDefault: function () {
+    var page = this;
     wx.showModal({
       title: '恢复默认',
       content: '会覆盖本机内容，保存云端后才会影响其他员工。',
       confirmColor: '#b7791f',
-      success: res => {
+      success: function (res) {
         if (!res.confirm) return;
-        this.markDirty(cloneDrinks());
+        page.markDirty(cloneDrinks());
       }
     });
   }

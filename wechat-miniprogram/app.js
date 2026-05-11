@@ -1,18 +1,18 @@
-const CLOUD_ENV_ID = '';
+var CLOUD_ENV_ID = '';
 
 App({
   globalData: {
     cloudReady: false
   },
 
-  onLaunch() {
+  onLaunch: function () {
     if (!wx.cloud) {
       this.globalData.cloudReady = false;
       return;
     }
 
     try {
-      const options = { traceUser: true };
+      var options = { traceUser: true };
       if (CLOUD_ENV_ID) options.env = CLOUD_ENV_ID;
       wx.cloud.init(options);
       this.globalData.cloudReady = true;

@@ -1,4 +1,4 @@
-const DEFAULT_DRINKS = [
+var DEFAULT_DRINKS = [
   { id: 1, sort: 1, emoji: '🧂', name: '海盐芝士月白', price: '¥43', img: '', ingredients: [
     { name: 'Espresso 浓缩', amount: '标准份量' },
     { name: '热水（65°C）', amount: '150g' },
