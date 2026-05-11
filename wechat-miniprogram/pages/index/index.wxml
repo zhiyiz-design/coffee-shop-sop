@@ -27,6 +27,7 @@
     <view class="tool-row">
       <button class="tool-btn primary" loading="{{loading}}" bindtap="refreshCloud">刷新</button>
       <button class="tool-btn primary" loading="{{loading}}" bindtap="saveCloud">保存云端</button>
+      <button class="tool-btn" loading="{{loading}}" bindtap="exportPdf">导出PDF</button>
       <button class="tool-btn" bindtap="expandAll">展开全部</button>
       <button class="tool-btn" bindtap="exportBackup">导出</button>
       <button class="tool-btn" bindtap="importBackup">导入</button>

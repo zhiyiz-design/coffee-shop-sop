@@ -206,6 +206,53 @@ Page({
       });
   },
 
+  exportPdf() {
+    const app = getApp();
+    if (!app.globalData.cloudReady) {
+      wx.showToast({ title: '请先连接云端', icon: 'none' });
+      return;
+    }
+
+    const drinks = normalizeData(this.data.drinks);
+    this.setData({ loading: true });
+    wx.showLoading({ title: '生成PDF中' });
+    wx.cloud.callFunction({
+      name: 'sopApi',
+      data: {
+        action: 'exportPdf',
+        drinks
+      }
+    })
+      .then(result => {
+        const fileID = result && result.result && result.result.fileID;
+        if (!fileID) throw new Error('missing fileID');
+        return wx.cloud.downloadFile({ fileID });
+      })
+      .then(result => {
+        if (!result || !result.tempFilePath) throw new Error('missing temp file');
+        return new Promise((resolve, reject) => {
+          wx.openDocument({
+            filePath: result.tempFilePath,
+            fileType: 'pdf',
+            showMenu: true,
+            success: resolve,
+            fail: reject
+          });
+        });
+      })
+      .then(() => {
+        wx.showToast({ title: 'PDF已打开', icon: 'success' });
+      })
+      .catch(error => {
+        console.warn('PDF导出失败', error);
+        wx.showToast({ title: 'PDF导出失败', icon: 'none' });
+      })
+      .then(() => {
+        wx.hideLoading();
+        this.setData({ loading: false });
+      });
+  },
+
   markDirty(drinks) {
     const normalized = normalizeData(drinks);
     this.persistLocal(normalized);
