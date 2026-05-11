@@ -23,6 +23,7 @@ python3 -m http.server 4173
 - [app.js](/Users/zoeymac/Documents/Work/coffe/app.js) 主逻辑、编辑、打印、云端同步
 - [firebase-config.js](/Users/zoeymac/Documents/Work/coffe/firebase-config.js) Firebase 配置入口
 - [FIREBASE_SETUP.md](/Users/zoeymac/Documents/Work/coffe/FIREBASE_SETUP.md) Firebase 设置步骤
+- [wechat-miniprogram](/Users/zoeymac/Documents/Work/coffe/wechat-miniprogram) 微信小程序版本
 
 ## 当前数据逻辑
 

@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "咖啡店 SOP",
+    "navigationBarBackgroundColor": "#23613A",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F6F4EF"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
