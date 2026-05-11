@@ -35,7 +35,32 @@
   "simulatorPluginLibVersion": {},
   "packOptions": {
     "ignore": [],
-    "include": []
+    "include": [
+      {
+        "type": "file",
+        "value": "app.js"
+      },
+      {
+        "type": "file",
+        "value": "app.json"
+      },
+      {
+        "type": "file",
+        "value": "app.wxss"
+      },
+      {
+        "type": "folder",
+        "value": "pages"
+      },
+      {
+        "type": "folder",
+        "value": "data"
+      },
+      {
+        "type": "file",
+        "value": "sitemap.json"
+      }
+    ]
   },
   "editorSetting": {}
 }

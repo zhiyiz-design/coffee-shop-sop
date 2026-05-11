@@ -7,7 +7,8 @@
         <view class="brand-sub">标准操作手册</view>
       </view>
     </view>
-    <button class="top-action {{editMode ? 'active' : ''}}" size="mini" bindtap="toggleEdit">{{editMode ? '完成' : '编辑'}}</button>
+    <button wx:if="{{viewMode}}" class="top-action" size="mini" bindtap="toggleEdit">编辑</button>
+    <button wx:if="{{editMode}}" class="top-action active" size="mini" bindtap="toggleEdit">完成</button>
   </view>
 
   <view class="status {{status.cls}}">
@@ -20,9 +21,9 @@
 
   <view class="tools">
     <view class="search">
-      <text class="search-icon">⌕</text>
+      <text class="search-icon">搜</text>
       <input value="{{query}}" confirm-type="search" placeholder="搜索饮品、原料或步骤" bindinput="onSearch" />
-      <button wx:if="{{query}}" class="clear-btn" size="mini" bindtap="clearSearch">×</button>
+      <button wx:if="{{query}}" class="clear-btn" size="mini" bindtap="clearSearch">x</button>
     </view>
     <view class="tool-row">
       <button class="tool-btn primary" loading="{{loading}}" bindtap="refreshCloud">刷新</button>
@@ -40,12 +41,12 @@
         <view class="card-head" data-id="{{drink.id}}" bindtap="toggleCard">
           <view class="drink-emoji">{{drink.emoji}}</view>
           <view class="drink-main">
-            <view wx:if="{{!editMode}}" class="drink-name">{{drink.name}}</view>
-            <input wx:else class="edit-title" value="{{drink.name}}" data-id="{{drink.id}}" data-field="name" bindinput="updateDrinkField" />
-            <view wx:if="{{!editMode}}" class="drink-price">{{drink.price}}</view>
-            <input wx:else class="edit-price" value="{{drink.price}}" data-id="{{drink.id}}" data-field="price" bindinput="updateDrinkField" />
+            <view wx:if="{{viewMode}}" class="drink-name">{{drink.name}}</view>
+            <input wx:if="{{editMode}}" class="edit-title" value="{{drink.name}}" data-id="{{drink.id}}" data-field="name" bindinput="updateDrinkField" />
+            <view wx:if="{{viewMode}}" class="drink-price">{{drink.price}}</view>
+            <input wx:if="{{editMode}}" class="edit-price" value="{{drink.price}}" data-id="{{drink.id}}" data-field="price" bindinput="updateDrinkField" />
           </view>
-          <view class="chev {{drink.open ? 'open' : ''}}">›</view>
+          <view class="chev {{drink.openClass}}">&gt;</view>
         </view>
 
         <view wx:if="{{drink.open}}" class="card-body">
@@ -56,40 +57,40 @@
           </view>
 
           <view class="section-title">原料配方</view>
-          <block wx:for="{{drink.ingredients}}" wx:for-item="ingredient" wx:for-index="ingIndex" wx:key="ingIndex">
-            <view wx:if="{{!editMode}}" class="ingredient-row">
+          <block wx:for="{{drink.ingredientViews}}" wx:for-item="ingredient" wx:key="uid">
+            <view wx:if="{{viewMode}}" class="ingredient-row">
               <view class="dot"></view>
               <view class="ingredient-name">{{ingredient.name}}</view>
               <view class="amount">{{ingredient.amount}}</view>
             </view>
-            <view wx:else class="edit-row">
-              <input class="edit-input name" value="{{ingredient.name}}" placeholder="原料" data-id="{{drink.id}}" data-index="{{ingIndex}}" data-field="name" bindinput="updateIngredient" />
-              <input class="edit-input amount-input" value="{{ingredient.amount}}" placeholder="用量" data-id="{{drink.id}}" data-index="{{ingIndex}}" data-field="amount" bindinput="updateIngredient" />
-              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{ingIndex}}" bindtap="removeIngredient">×</button>
+            <view wx:if="{{editMode}}" class="edit-row">
+              <input class="edit-input name" value="{{ingredient.name}}" placeholder="原料" data-id="{{drink.id}}" data-index="{{ingredient.index}}" data-field="name" bindinput="updateIngredient" />
+              <input class="edit-input amount-input" value="{{ingredient.amount}}" placeholder="用量" data-id="{{drink.id}}" data-index="{{ingredient.index}}" data-field="amount" bindinput="updateIngredient" />
+              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{ingredient.index}}" bindtap="removeIngredient">x</button>
             </view>
           </block>
           <button wx:if="{{editMode}}" class="add-line" size="mini" data-id="{{drink.id}}" bindtap="addIngredient">+ 原料</button>
 
           <view class="section-title">制作步骤</view>
-          <block wx:for="{{drink.steps}}" wx:for-item="step" wx:for-index="stepIndex" wx:key="stepIndex">
-            <view wx:if="{{!editMode}}" class="step-row">
-              <view class="step-no">{{stepIndex + 1}}</view>
-              <view class="step-text">{{step}}</view>
+          <block wx:for="{{drink.stepViews}}" wx:for-item="step" wx:key="uid">
+            <view wx:if="{{viewMode}}" class="step-row">
+              <view class="step-no">{{step.no}}</view>
+              <view class="step-text">{{step.text}}</view>
             </view>
-            <view wx:else class="edit-step">
-              <view class="step-no">{{stepIndex + 1}}</view>
-              <input value="{{step}}" placeholder="步骤说明" data-id="{{drink.id}}" data-index="{{stepIndex}}" bindinput="updateStep" />
-              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{stepIndex}}" bindtap="removeStep">×</button>
+            <view wx:if="{{editMode}}" class="edit-step">
+              <view class="step-no">{{step.no}}</view>
+              <input value="{{step.text}}" placeholder="步骤说明" data-id="{{drink.id}}" data-index="{{step.index}}" bindinput="updateStep" />
+              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{step.index}}" bindtap="removeStep">x</button>
             </view>
           </block>
           <button wx:if="{{editMode}}" class="add-line" size="mini" data-id="{{drink.id}}" bindtap="addStep">+ 步骤</button>
 
-          <view wx:if="{{drink.hasNotes || editMode}}" class="section-title">注意事项</view>
-          <block wx:for="{{drink.notes}}" wx:for-item="note" wx:for-index="noteIndex" wx:key="noteIndex">
-            <view wx:if="{{!editMode}}" class="note-row">{{note}}</view>
-            <view wx:else class="edit-note">
-              <input value="{{note}}" placeholder="注意事项" data-id="{{drink.id}}" data-index="{{noteIndex}}" bindinput="updateNote" />
-              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{noteIndex}}" bindtap="removeNote">×</button>
+          <view wx:if="{{drink.showNotes}}" class="section-title">注意事项</view>
+          <block wx:for="{{drink.noteViews}}" wx:for-item="note" wx:key="uid">
+            <view wx:if="{{viewMode}}" class="note-row">{{note.text}}</view>
+            <view wx:if="{{editMode}}" class="edit-note">
+              <input value="{{note.text}}" placeholder="注意事项" data-id="{{drink.id}}" data-index="{{note.index}}" bindinput="updateNote" />
+              <button class="icon-btn" size="mini" data-id="{{drink.id}}" data-index="{{note.index}}" bindtap="removeNote">x</button>
             </view>
           </block>
           <button wx:if="{{editMode}}" class="add-line" size="mini" data-id="{{drink.id}}" bindtap="addNote">+ 注意事项</button>

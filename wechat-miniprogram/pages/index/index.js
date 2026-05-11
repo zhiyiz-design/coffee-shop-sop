@@ -95,6 +95,7 @@ Page({
     query: '',
     openMap: {},
     editMode: false,
+    viewMode: true,
     dirty: false,
     loading: false,
     status: STATUS.loading
@@ -155,6 +156,7 @@ Page({
   updateVisible: function () {
     var query = String(this.data.query || '').trim().toLowerCase();
     var openMap = this.data.openMap;
+    var editMode = this.data.editMode;
     var visibleDrinks = this.data.drinks.filter(function (drink) {
       if (!query) return true;
       var haystack = [drink.name, drink.price]
@@ -172,7 +174,32 @@ Page({
         viewDrink[key] = drink[key];
       });
       viewDrink.open = !!openMap[drink.id];
+      viewDrink.openClass = viewDrink.open ? 'open' : '';
       viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
+      viewDrink.showNotes = viewDrink.hasNotes || editMode;
+      viewDrink.ingredientViews = (drink.ingredients || []).map(function (ingredient, index) {
+        return {
+          uid: drink.id + '-ing-' + index,
+          index: index,
+          name: String(ingredient && ingredient.name || ''),
+          amount: String(ingredient && ingredient.amount || '')
+        };
+      });
+      viewDrink.stepViews = (drink.steps || []).map(function (step, index) {
+        return {
+          uid: drink.id + '-step-' + index,
+          index: index,
+          no: String(index + 1),
+          text: String(step || '')
+        };
+      });
+      viewDrink.noteViews = (drink.notes || []).map(function (note, index) {
+        return {
+          uid: drink.id + '-note-' + index,
+          index: index,
+          text: String(note || '')
+        };
+      });
       return viewDrink;
     });
     this.setData({ visibleDrinks: visibleDrinks });
@@ -331,7 +358,8 @@ Page({
   },
 
   toggleEdit: function () {
-    this.setData({ editMode: !this.data.editMode });
+    var nextEditMode = !this.data.editMode;
+    this.setData({ editMode: nextEditMode, viewMode: !nextEditMode });
     this.updateVisible();
   },
 
@@ -412,7 +440,7 @@ Page({
     });
     var openMap = copyMap(this.data.openMap);
     openMap[nextId] = true;
-    this.setData({ openMap: openMap, editMode: true });
+    this.setData({ openMap: openMap, editMode: true, viewMode: false });
     this.markDirty(drinks);
   },
 
