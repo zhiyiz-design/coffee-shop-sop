@@ -102,6 +102,14 @@ Page({
   },
 
   onLoad: function () {
+    try {
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline']
+      });
+    } catch (error) {
+      console.warn('分享菜单初始化失败。', error);
+    }
     this.loadLocal();
     this.setStatus('local');
   },
@@ -122,6 +130,12 @@ Page({
     return {
       title: '咖啡店 SOP',
       path: '/pages/index/index'
+    };
+  },
+
+  onShareTimeline: function () {
+    return {
+      title: '咖啡店 SOP 标准操作手册'
     };
   },
 
@@ -174,7 +188,7 @@ Page({
         viewDrink[key] = drink[key];
       });
       viewDrink.open = !!openMap[drink.id];
-      viewDrink.openClass = viewDrink.open ? 'open' : '';
+      viewDrink.actionText = viewDrink.open ? '收起' : '展开';
       viewDrink.hasNotes = Array.isArray(drink.notes) && drink.notes.length > 0;
       viewDrink.showNotes = viewDrink.hasNotes || editMode;
       viewDrink.ingredientViews = (drink.ingredients || []).map(function (ingredient, index) {
@@ -420,6 +434,70 @@ Page({
     if (!drink || (!drink.notes[index] && drink.notes[index] !== '')) return;
     drink.notes[index] = event.detail.value;
     this.markDirty(drinks);
+  },
+
+  previewDrinkImage: function (event) {
+    var src = event.currentTarget.dataset.src;
+    if (!src) return;
+    wx.previewImage({
+      urls: [src],
+      current: src
+    });
+  },
+
+  chooseDrinkImage: function (event) {
+    var app = getApp();
+    var page = this;
+    var id = Number(event.currentTarget.dataset.id);
+    if (!app.globalData.cloudReady) {
+      wx.showToast({ title: '请先刷新连接云端', icon: 'none' });
+      return;
+    }
+
+    wx.chooseImage({
+      count: 1,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: function (chooseResult) {
+        var filePath = chooseResult.tempFilePaths && chooseResult.tempFilePaths[0];
+        if (!filePath) return;
+        var suffixMatch = filePath.match(/\.[a-zA-Z0-9]+$/);
+        var suffix = suffixMatch ? suffixMatch[0] : '.jpg';
+        var cloudPath = 'drink-images/' + id + '-' + Date.now() + suffix;
+        page.setData({ loading: true });
+        wx.showLoading({ title: '上传图片中' });
+        wx.cloud.uploadFile({
+          cloudPath: cloudPath,
+          filePath: filePath,
+          success: function (uploadResult) {
+            var drinks = clone(page.data.drinks);
+            var drink = findDrink(drinks, id);
+            if (!drink) return;
+            drink.img = uploadResult.fileID || '';
+            page.markDirty(drinks);
+            wx.showToast({ title: '图片已上传', icon: 'success' });
+          },
+          fail: function (error) {
+            console.warn('图片上传失败', error);
+            wx.showToast({ title: '图片上传失败', icon: 'none' });
+          },
+          complete: function () {
+            wx.hideLoading();
+            page.setData({ loading: false });
+          }
+        });
+      }
+    });
+  },
+
+  removeDrinkImage: function (event) {
+    var id = Number(event.currentTarget.dataset.id);
+    var drinks = clone(this.data.drinks);
+    var drink = findDrink(drinks, id);
+    if (!drink) return;
+    drink.img = '';
+    this.markDirty(drinks);
+    wx.showToast({ title: '已删除图片', icon: 'success' });
   },
 
   addDrink: function () {

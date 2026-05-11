@@ -46,10 +46,16 @@
             <view wx:if="{{viewMode}}" class="drink-price">{{drink.price}}</view>
             <input wx:if="{{editMode}}" class="edit-price" value="{{drink.price}}" data-id="{{drink.id}}" data-field="price" bindinput="updateDrinkField" />
           </view>
-          <view class="chev {{drink.openClass}}">&gt;</view>
+          <view class="chev">{{drink.actionText}}</view>
         </view>
 
         <view wx:if="{{drink.open}}" class="card-body">
+          <image wx:if="{{drink.img}}" class="drink-photo" src="{{drink.img}}" mode="aspectFill" data-src="{{drink.img}}" bindtap="previewDrinkImage" />
+          <view wx:if="{{editMode}}" class="image-tools">
+            <button class="image-btn" size="mini" data-id="{{drink.id}}" bindtap="chooseDrinkImage">上传/更换图片</button>
+            <button wx:if="{{drink.img}}" class="image-btn danger" size="mini" data-id="{{drink.id}}" bindtap="removeDrinkImage">删除图片</button>
+          </view>
+
           <view wx:if="{{editMode}}" class="emoji-edit">
             <text>图标</text>
             <input value="{{drink.emoji}}" data-id="{{drink.id}}" data-field="emoji" bindinput="updateDrinkField" />
