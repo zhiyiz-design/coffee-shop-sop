@@ -38,8 +38,7 @@
 .brand-title {
   color: #6b4528;
   font-family: "Times New Roman", "STKaiti", "Kaiti SC", serif;
-  font-size: 54rpx;
-  font-style: italic;
+  font-size: 48rpx;
   font-weight: 700;
   line-height: 1.05;
   text-shadow: 0 2rpx 0 rgba(255, 255, 255, 0.8);
@@ -52,7 +51,6 @@
   border-bottom: 2rpx solid #a98255;
   color: #8c6840;
   font-size: 27rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -65,7 +63,6 @@
   color: #6b4528;
   font-family: "Times New Roman", "STKaiti", "Kaiti SC", serif;
   font-size: 25rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -117,7 +114,6 @@
 .status-title {
   color: #6b4528;
   font-size: 28rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -152,7 +148,6 @@
   min-width: 0;
   color: #6b4528;
   font-size: 30rpx;
-  font-style: italic;
 }
 
 .search-icon {
@@ -189,7 +184,6 @@
   background: #fff7e8;
   color: #6b4528;
   font-size: 25rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -207,7 +201,6 @@
   background: #f5ead0;
   color: #6b4528;
   font-size: 38rpx;
-  font-style: italic;
   font-weight: 700;
   text-decoration: underline;
   text-decoration-color: #b99466;
@@ -293,7 +286,6 @@
   width: 72rpx;
   color: #8c6840;
   font-size: 24rpx;
-  font-style: italic;
   font-weight: 700;
   text-align: right;
 }
@@ -332,7 +324,6 @@
   border-bottom: 2rpx solid #b99466;
   color: #6b4528;
   font-size: 31rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -405,7 +396,6 @@
   background: #ffe6bf;
   color: #6b4528;
   font-size: 27rpx;
-  font-style: italic;
   font-weight: 700;
   line-height: 1.55;
 }
@@ -423,7 +413,6 @@
 .emoji-edit text {
   color: #8c6840;
   font-size: 24rpx;
-  font-style: italic;
   font-weight: 700;
 }
 
@@ -529,6 +518,5 @@
   border-radius: 999rpx;
   background: #fff7e8;
   color: #6b4528;
-  font-style: italic;
   font-weight: 700;
 }

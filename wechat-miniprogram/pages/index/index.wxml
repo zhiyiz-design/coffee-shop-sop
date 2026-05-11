@@ -3,8 +3,8 @@
     <view class="brand">
       <view class="brand-icon">☕</view>
       <view>
-        <view class="brand-title">咖啡店 SOP</view>
-        <view class="brand-sub">标准操作手册</view>
+        <view class="brand-title">月白的厨房秘诀</view>
+        <view class="brand-sub">咖啡店 SOP 手册</view>
       </view>
     </view>
     <button wx:if="{{viewMode}}" class="top-action" size="mini" bindtap="toggleEdit">编辑</button>
@@ -35,7 +35,7 @@
     </view>
   </view>
 
-  <view class="menu-title">Coffee Menu:</view>
+  <view class="menu-title">厨房菜单：</view>
 
   <view class="list">
     <block wx:for="{{visibleDrinks}}" wx:for-item="drink" wx:key="id">

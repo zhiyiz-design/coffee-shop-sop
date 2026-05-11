@@ -277,7 +277,7 @@ function buildPdfPages(drinks) {
     content += pdfLine(cardX, 58, cardRight, 58, '0.78 0.61 0.40', 1);
     content += pdfText('prepared by: __________', cardX, 36, 12, '0.55 0.42 0.27');
     content += pdfText('date: __________', cardX + 210, 36, 12, '0.55 0.42 0.27');
-    content += pdfText('Coffee SOP · purr-fect cup', cardRight - 190, 36, 12, '0.55 0.42 0.27');
+    content += pdfText('月白的厨房秘诀 · 咖啡店 SOP 手册', cardRight - 220, 36, 12, '0.55 0.42 0.27');
   });
 
   if (content) pages.push(content);
